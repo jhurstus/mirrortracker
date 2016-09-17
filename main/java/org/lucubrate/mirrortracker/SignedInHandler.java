@@ -7,4 +7,5 @@ import android.view.View;
  */
 public interface SignedInHandler {
     public void onShowPrivateInfoChecked(View view);
+    public void onShareLocationChecked(View view);
 }

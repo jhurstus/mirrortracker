@@ -37,7 +37,7 @@ public class SignedInActivity extends AppCompatActivity
                 .addApi(LocationServices.API)
                 .build();
 
-        mDB = new FirebaseDB();
+        mDB = new FirebaseDB(FirebaseAuth.getInstance().getCurrentUser().getUid());
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
                 this, R.layout.activity_signed_in);
         binding.setModel(mDB.getModel());

@@ -21,8 +21,12 @@ public class FirebaseDB implements SignedInHandler {
 
     /** Android databinding object that connects to Firebase realtime database. */
     public static class Model extends BaseObservable {
-        private Model(boolean showPrivateInfo) {
+        private boolean showPrivateInfo;
+        private boolean shareLocation;
+
+        private Model(boolean showPrivateInfo, boolean shareLocation) {
             this.showPrivateInfo = showPrivateInfo;
+            this.shareLocation = shareLocation;
         }
 
         /**
@@ -38,7 +42,18 @@ public class FirebaseDB implements SignedInHandler {
             notifyPropertyChanged(BR.showPrivateInfo);
         }
 
-        private boolean showPrivateInfo;
+        /**
+         * @return Whether to share device location with mirror.
+         */
+        @Bindable
+        public boolean isShareLocation() {
+            return shareLocation;
+        }
+
+        public void setShareLocation(boolean shareLocation) {
+            this.shareLocation = shareLocation;
+            notifyPropertyChanged(BR.shareLocation);
+        }
     }
 
     final private static String TAG = "FirebaseDB";
@@ -46,23 +61,41 @@ public class FirebaseDB implements SignedInHandler {
     private FirebaseDatabase mDB;
     private Model mModel;
     private DatabaseReference showPrivateInfo;
+    private DatabaseReference user;
     // Only set persistence once per activation, otherwise firebase crashes.
     private static boolean hasSetPersistence = false;
 
-    FirebaseDB() {
+    FirebaseDB(String uid) {
         mDB = FirebaseDatabase.getInstance();
         if (!hasSetPersistence) {
             hasSetPersistence = true;
             mDB.setPersistenceEnabled(true);
         }
 
-        mModel = new Model(false);
+        mModel = new Model(true, true);
 
         showPrivateInfo = mDB.getReference("mirror/config/showPrivateInfo");
         showPrivateInfo.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mModel.setShowPrivateInfo(dataSnapshot.getValue(Boolean.class));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.w(TAG, "Failed to read value.", databaseError.toException());
+            }
+        });
+
+        user = mDB.getReference("users/" + uid);
+        user.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.exists() || !dataSnapshot.hasChildren()) {
+                  return;
+                }
+                mModel.setShareLocation(
+                        dataSnapshot.child("shareLocation").getValue(Boolean.class));
             }
 
             @Override
@@ -82,5 +115,10 @@ public class FirebaseDB implements SignedInHandler {
     @Override
     public void onShowPrivateInfoChecked(View view) {
         showPrivateInfo.setValue(((Switch) view).isChecked());
+    }
+
+    @Override
+    public void onShareLocationChecked(View view) {
+        user.child("shareLocation").setValue(((Switch) view).isChecked());
     }
 }

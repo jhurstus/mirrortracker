@@ -2,6 +2,7 @@ package org.lucubrate.mirrortracker;
 
 import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -13,10 +14,13 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 
+import org.lucubrate.mirrortracker.databinding.ActivitySignedInBinding;
+
 /** Main activity, shown to signed-in users. */
 public class SignedInActivity extends AppCompatActivity
         implements GoogleApiClient.OnConnectionFailedListener {
     private GoogleApiClient mGoogleApiClient;
+    private FirebaseDB mDB;
 
     public static Intent createIntent(Context context) {
         Intent i = new Intent();
@@ -33,7 +37,11 @@ public class SignedInActivity extends AppCompatActivity
                 .addApi(LocationServices.API)
                 .build();
 
-        setContentView(R.layout.activity_signed_in);
+        mDB = new FirebaseDB();
+        ActivitySignedInBinding binding = DataBindingUtil.setContentView(
+                this, R.layout.activity_signed_in);
+        binding.setModel(mDB.getModel());
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
     }

@@ -46,10 +46,15 @@ public class FirebaseDB implements SignedInHandler {
     private FirebaseDatabase mDB;
     private Model mModel;
     private DatabaseReference showPrivateInfo;
+    // Only set persistence once per activation, otherwise firebase crashes.
+    private static boolean hasSetPersistence = false;
 
     FirebaseDB() {
         mDB = FirebaseDatabase.getInstance();
-        mDB.setPersistenceEnabled(true);
+        if (!hasSetPersistence) {
+            hasSetPersistence = true;
+            mDB.setPersistenceEnabled(true);
+        }
 
         mModel = new Model(false);
 

@@ -49,6 +49,7 @@ public class FirebaseDB implements SignedInHandler {
 
     FirebaseDB() {
         mDB = FirebaseDatabase.getInstance();
+        mDB.setPersistenceEnabled(true);
 
         mModel = new Model(false);
 

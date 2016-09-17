@@ -41,6 +41,7 @@ public class SignedInActivity extends AppCompatActivity
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
                 this, R.layout.activity_signed_in);
         binding.setModel(mDB.getModel());
+        binding.setHandler(mDB);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

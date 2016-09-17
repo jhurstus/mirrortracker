@@ -3,6 +3,8 @@ package org.lucubrate.mirrortracker;
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 import android.util.Log;
+import android.view.View;
+import android.widget.Switch;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -15,7 +17,8 @@ import org.lucubrate.mirrortracker.BR;  // KEEP: needed for Android Studio.
 /**
  * Firebase realtime database data binding.
  */
-public class FirebaseDB {
+public class FirebaseDB implements SignedInHandler {
+
     /** Android databinding object that connects to Firebase realtime database. */
     public static class Model extends BaseObservable {
         private Model(boolean hidePrivateInfo) {
@@ -68,5 +71,10 @@ public class FirebaseDB {
      */
     public Model getModel() {
         return mModel;
+    }
+
+    @Override
+    public void onHidePrivateInfoChecked(View view) {
+        hidePrivateInfo.setValue(((Switch) view).isChecked());
     }
 }

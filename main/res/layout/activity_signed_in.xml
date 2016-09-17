@@ -5,6 +5,9 @@
         <variable
             name="model"
             type="org.lucubrate.mirrortracker.FirebaseDB.Model" />
+        <variable
+            name="handler"
+            type="org.lucubrate.mirrortracker.SignedInHandler" />
     </data>
 
     <android.support.design.widget.CoordinatorLayout
@@ -60,7 +63,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:checked="@{model.hidePrivateInfo}" />
+                    android:checked="@{model.hidePrivateInfo}"
+                    android:onClick="@{handler::onHidePrivateInfoChecked}" />
 
             </RelativeLayout>
 

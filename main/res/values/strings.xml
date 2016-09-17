@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Mirror</string>
-    <string name="hide_private_info">Hide private info</string>
+    <string name="show_private_info">Show private info</string>
     <string name="sign_out">sign out</string>
 </resources>

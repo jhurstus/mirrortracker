@@ -21,42 +21,42 @@ public class FirebaseDB implements SignedInHandler {
 
     /** Android databinding object that connects to Firebase realtime database. */
     public static class Model extends BaseObservable {
-        private Model(boolean hidePrivateInfo) {
-            this.hidePrivateInfo = hidePrivateInfo;
+        private Model(boolean showPrivateInfo) {
+            this.showPrivateInfo = showPrivateInfo;
         }
 
         /**
-         * @return Whether private/sensitive info on the mirror display should be hidden.
+         * @return Whether private/sensitive info on the mirror display should be shown.
          */
         @Bindable
-        public boolean isHidePrivateInfo() {
-            return hidePrivateInfo;
+        public boolean isShowPrivateInfo() {
+            return showPrivateInfo;
         }
 
-        public void setHidePrivateInfo(boolean hidePrivateInfo) {
-            this.hidePrivateInfo = hidePrivateInfo;
-            notifyPropertyChanged(BR.hidePrivateInfo);
+        public void setShowPrivateInfo(boolean showPrivateInfo) {
+            this.showPrivateInfo = showPrivateInfo;
+            notifyPropertyChanged(BR.showPrivateInfo);
         }
 
-        private boolean hidePrivateInfo;
+        private boolean showPrivateInfo;
     }
 
     final private static String TAG = "FirebaseDB";
 
     private FirebaseDatabase mDB;
     private Model mModel;
-    private DatabaseReference hidePrivateInfo;
+    private DatabaseReference showPrivateInfo;
 
     FirebaseDB() {
         mDB = FirebaseDatabase.getInstance();
 
         mModel = new Model(false);
 
-        hidePrivateInfo = mDB.getReference("mirror/config/hidePrivateInfo");
-        hidePrivateInfo.addValueEventListener(new ValueEventListener() {
+        showPrivateInfo = mDB.getReference("mirror/config/showPrivateInfo");
+        showPrivateInfo.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                mModel.setHidePrivateInfo(dataSnapshot.getValue(Boolean.class));
+                mModel.setShowPrivateInfo(dataSnapshot.getValue(Boolean.class));
             }
 
             @Override
@@ -74,7 +74,7 @@ public class FirebaseDB implements SignedInHandler {
     }
 
     @Override
-    public void onHidePrivateInfoChecked(View view) {
-        hidePrivateInfo.setValue(((Switch) view).isChecked());
+    public void onShowPrivateInfoChecked(View view) {
+        showPrivateInfo.setValue(((Switch) view).isChecked());
     }
 }

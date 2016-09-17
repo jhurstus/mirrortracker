@@ -54,7 +54,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
                     android:layout_marginTop="3dp"
-                    android:text="@string/hide_private_info"
+                    android:text="@string/show_private_info"
                     android:textColor="@color/bodyTextColor"
                     android:textSize="16sp" />
 
@@ -63,8 +63,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:checked="@{model.hidePrivateInfo}"
-                    android:onClick="@{handler::onHidePrivateInfoChecked}" />
+                    android:checked="@{model.showPrivateInfo}"
+                    android:onClick="@{handler::onShowPrivateInfoChecked}" />
 
             </RelativeLayout>
 

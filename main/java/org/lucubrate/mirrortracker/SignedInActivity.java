@@ -52,6 +52,10 @@ public class SignedInActivity extends AppCompatActivity
         // Do nothing.  This is only running on my phones, which have play services.
     }
 
+    /** Sync button handler. */
+    public void sync(View view) {
+    }
+
     /** Sign Out button handler. */
     public void signOut(View view) {
         FirebaseAuth.getInstance().signOut();

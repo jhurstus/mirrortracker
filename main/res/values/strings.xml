@@ -3,4 +3,6 @@
     <string name="show_private_info">Show private info</string>
     <string name="sign_out">sign out</string>
     <string name="share_location">Share location</string>
+    <string name="sync_now">Sync now</string>
+    <string name="loading">...</string>
 </resources>

@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">MirrorTracker</string>
-    <string name="action_settings">Settings</string>
+    <string name="app_name">Mirror</string>
+    <string name="hide_private_info">Hide private info</string>
+    <string name="sign_out">sign out</string>
 </resources>

@@ -25,6 +25,7 @@ public class LocationService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
     final private static String TAG = "LocationService";
+    final public static String STOP_EXTRA = "stop";
     private GoogleApiClient mGoogleApiClient;
     private SharedPreferences mPrefs;
     private LocationListener mLocationListener;
@@ -32,6 +33,7 @@ public class LocationService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.i(TAG, "LocationService creating.");
         mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.toString(), MODE_PRIVATE);
 
         if (!shouldTrackLocation()) {
@@ -44,6 +46,8 @@ public class LocationService extends Service implements
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
+
+        Log.i(TAG, "Created LocationService.");
     }
 
     @Override
@@ -51,7 +55,9 @@ public class LocationService extends Service implements
         super.onStartCommand(intent, flags, startId);
         Log.i(TAG, "starting LocationService");
 
-        if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
+        if (intent.getBooleanExtra(STOP_EXTRA, false)) {
+            stopTrackingLocation();
+        } else if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
             mGoogleApiClient.connect();
         }
         return START_STICKY;

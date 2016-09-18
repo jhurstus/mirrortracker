@@ -106,9 +106,11 @@ public class FirebaseDB implements SignedInHandler {
                 mPrefs.edit()
                         .putBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), share)
                         .commit();
-                if (share) {
-                    mContext.startService(new Intent(mContext, LocationService.class));
+                Intent i = new Intent(mContext, LocationService.class);
+                if (!share) {
+                    i.putExtra(LocationService.STOP_EXTRA, true);
                 }
+                mContext.startService(i);
                 mModel.setShareLocation(share);
             }
 

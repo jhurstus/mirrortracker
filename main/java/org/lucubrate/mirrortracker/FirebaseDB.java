@@ -1,5 +1,8 @@
 package org.lucubrate.mirrortracker;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 import android.util.Log;
@@ -58,6 +61,8 @@ public class FirebaseDB implements SignedInHandler {
 
     final private static String TAG = "FirebaseDB";
 
+    private SharedPreferences mPrefs;
+    private Context mContext;
     private FirebaseDatabase mDB;
     private Model mModel;
     private DatabaseReference showPrivateInfo;
@@ -65,7 +70,10 @@ public class FirebaseDB implements SignedInHandler {
     // Only set persistence once per activation, otherwise firebase crashes.
     private static boolean hasSetPersistence = false;
 
-    FirebaseDB(String uid) {
+    FirebaseDB(String uid, SharedPreferences prefs, Context context) {
+        mPrefs = prefs;
+        mContext = context;
+
         mDB = FirebaseDatabase.getInstance();
         if (!hasSetPersistence) {
             hasSetPersistence = true;
@@ -94,8 +102,14 @@ public class FirebaseDB implements SignedInHandler {
                 if (!dataSnapshot.exists() || !dataSnapshot.hasChildren()) {
                   return;
                 }
-                mModel.setShareLocation(
-                        dataSnapshot.child("shareLocation").getValue(Boolean.class));
+                boolean share = dataSnapshot.child("shareLocation").getValue(Boolean.class);
+                mPrefs.edit()
+                        .putBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), share)
+                        .commit();
+                if (share) {
+                    mContext.startService(new Intent(mContext, LocationService.class));
+                }
+                mModel.setShareLocation(share);
             }
 
             @Override

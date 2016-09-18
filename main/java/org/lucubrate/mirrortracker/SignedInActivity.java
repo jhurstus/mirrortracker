@@ -2,25 +2,22 @@ package org.lucubrate.mirrortracker;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 
 import org.lucubrate.mirrortracker.databinding.ActivitySignedInBinding;
 
 /** Main activity, shown to signed-in users. */
-public class SignedInActivity extends AppCompatActivity
-        implements GoogleApiClient.OnConnectionFailedListener {
-    private GoogleApiClient mGoogleApiClient;
+public class SignedInActivity extends AppCompatActivity {
+
     private FirebaseDB mDB;
+    private SharedPreferences mPrefs;
 
     public static Intent createIntent(Context context) {
         Intent i = new Intent();
@@ -32,12 +29,12 @@ public class SignedInActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, this)
-                .addApi(LocationServices.API)
-                .build();
+        mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.toString(), MODE_PRIVATE);
 
-        mDB = new FirebaseDB(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        mDB = new FirebaseDB(
+                FirebaseAuth.getInstance().getCurrentUser().getUid(),
+                mPrefs,
+                this);
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
                 this, R.layout.activity_signed_in);
         binding.setModel(mDB.getModel());
@@ -45,11 +42,6 @@ public class SignedInActivity extends AppCompatActivity
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        // Do nothing.  This is only running on my phones, which have play services.
     }
 
     /** Sync button handler. */

@@ -55,7 +55,7 @@ public class LocationService extends Service implements
         super.onStartCommand(intent, flags, startId);
         Log.i(TAG, "starting LocationService");
 
-        if (intent.getBooleanExtra(STOP_EXTRA, false)) {
+        if (intent != null && intent.getBooleanExtra(STOP_EXTRA, false)) {
             stopTrackingLocation();
         } else if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
             mGoogleApiClient.connect();

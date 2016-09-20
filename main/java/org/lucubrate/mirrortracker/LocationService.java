@@ -5,9 +5,13 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -17,6 +21,11 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+
+import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.LOCATION_DATA_EXTRA;
+import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.RECEIVER;
+import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.RESULT_DATA_KEY;
+import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.SUCCESS_RESULT;
 
 /**
  * Background service that periodically pulls device location via GMS location services.
@@ -29,6 +38,7 @@ public class LocationService extends Service implements
     private GoogleApiClient mGoogleApiClient;
     private SharedPreferences mPrefs;
     private LocationListener mLocationListener;
+    private FetchAddressReceiver mFetchAddressReceiver;
 
     @Override
     public void onCreate() {
@@ -40,6 +50,8 @@ public class LocationService extends Service implements
             stopSelf();
             return;
         }
+
+        mFetchAddressReceiver = new FetchAddressReceiver(new Handler());
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API)
@@ -85,6 +97,7 @@ public class LocationService extends Service implements
             @Override
             public void onLocationChanged(Location location) {
                 Log.i(TAG, location.toString());
+                sendGeocodeRequest(location);
             }
         };
 
@@ -108,8 +121,17 @@ public class LocationService extends Service implements
     }
 
     private boolean shouldTrackLocation() {
-        return mPrefs != null &&
+        return Geocoder.isPresent() &&
+                mPrefs != null &&
                 mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
+    }
+
+    private void sendGeocodeRequest(Location location) {
+        Log.i(TAG, "sending geocode request");
+        Intent intent = new Intent(this, FetchAddressIntentService.class);
+        intent.putExtra(RECEIVER, mFetchAddressReceiver);
+        intent.putExtra(LOCATION_DATA_EXTRA, location);
+        startService(intent);
     }
 
     @Override
@@ -130,5 +152,20 @@ public class LocationService extends Service implements
 
     @Override
     public void onConnectionSuspended(int i) {
+    }
+
+    private class FetchAddressReceiver extends ResultReceiver {
+        FetchAddressReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            if (resultCode == SUCCESS_RESULT && resultData != null) {
+                // Address[addressLines=[0:"373 Clipper Street",1:"San Francisco, CA 94114",2:"USA"],feature=373,admin=California,sub-admin=null,locality=San Francisco,thoroughfare=Clipper Street,postalCode=94114,countryCode=US,countryName=United States,hasLatitude=true,latitude=37.748692,hasLongitude=true,longitude=-122.433177,phone=null,url=null,extras=null]
+                Address address = resultData.getParcelable(RESULT_DATA_KEY);
+                Log.i(TAG, "got result " + address.getAdminArea());
+            }
+        }
     }
 }

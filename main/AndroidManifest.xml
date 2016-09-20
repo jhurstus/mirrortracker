@@ -37,7 +37,12 @@
         </receiver>
 
         <service
-            android:name=".LocationService" />
+            android:name=".LocationService"
+            android:exported="false"/>
+
+        <service
+            android:name=".FetchAddressIntentService"
+            android:exported="false"/>
 
         <meta-data
             android:name="com.google.android.gms.version"

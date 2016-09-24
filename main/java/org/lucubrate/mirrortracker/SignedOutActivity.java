@@ -13,7 +13,7 @@ public class SignedOutActivity extends AppCompatActivity {
 
     private final static int RC_SIGN_IN = 42;
 
-    public static Intent createIntent(Context context) {
+    static Intent createIntent(Context context) {
         Intent i = new Intent();
         i.setClass(context, SignedOutActivity.class);
         return i;
@@ -42,5 +42,16 @@ public class SignedOutActivity extends AppCompatActivity {
                     RC_SIGN_IN);
         }
         setContentView(R.layout.activity_signed_out);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN) {
+            if (resultCode == RESULT_OK) {
+                startActivity(SignedInActivity.createIntent(this));
+                finish();
+            }
+        }
     }
 }

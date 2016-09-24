@@ -7,7 +7,7 @@
 
         <variable
             name="model"
-            type="org.lucubrate.mirrortracker.FirebaseDB.Model" />
+            type="org.lucubrate.mirrortracker.SignedInActivity.Model" />
 
         <variable
             name="handler"
@@ -20,7 +20,6 @@
         android:layout_height="match_parent"
         android:fitsSystemWindows="true"
         tools:context="org.lucubrate.mirrortracker.SignedInActivity">
-
 
         <android.support.design.widget.AppBarLayout
             android:layout_width="match_parent"
@@ -134,7 +133,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
-                android:onClick="signOut"
+                android:onClick="@{handler::onSignOutClicked}"
                 android:text="@string/sign_out" />
 
         </LinearLayout>

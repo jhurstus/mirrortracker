@@ -1,37 +1,18 @@
 package org.lucubrate.mirrortracker;
 
+import com.google.firebase.database.IgnoreExtraProperties;
+
 /**
  * POJO representing a timestamped user location.
  */
+@IgnoreExtraProperties
 public class LocationEvent {
-    private long timestamp;
-    private String city;
-    private String state;
-    private String country;
-    private String label;
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public String getCountry() {
-        return country;
-    }
-
-    /**
-     * @return User defined label for this location, or null if not available.  e.g. "home"
-     */
-    public String getLabel() {
-        return label;
-    }
+    public long timestamp;
+    public String city;
+    public String state;
+    public String country;
+    /** User defined label for this location, or null if not available.  e.g. "home" */
+    public String label;
 
     public LocationEvent(long timestamp, String city, String state, String country, String label) {
         this.timestamp = timestamp;
@@ -41,4 +22,7 @@ public class LocationEvent {
         this.label = label;
     }
 
+    public LocationEvent() {
+        // Default constructor required for calls to DataSnapshot.getValue(LocationEvent.class)
+    }
 }

@@ -22,6 +22,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.LOCATION_DATA_EXTRA;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.RECEIVER;
@@ -33,36 +35,36 @@ import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.SUC
  */
 public class LocationService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener, FirebaseDbObserver {
     final private static String TAG = "LocationService";
-
-    /** Service intent extra key, who's boolean value indicates if the service should be stopped. */
-    final public static String STOP_EXTRA = "stop";
 
     private GoogleApiClient mGoogleApiClient;
     private SharedPreferences mPrefs;
     private LocationListener mLocationListener;
     private FetchAddressReceiver mFetchAddressReceiver;
     private LocationEvent mLastLocation;
-    private LocationEventObserver mLocationEventObserver;
+    private FirebaseDbObserver mActivity;
+    private FirebaseDB mDB;
 
-    void setLocationEventObserver(LocationEventObserver o) {
-        mLocationEventObserver = o;
+    void setFireBaseDbObserver(FirebaseDbObserver o) {
+        mActivity = o;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.i(TAG, "LocationService creating.");
-        mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.toString(), MODE_PRIVATE);
 
-        if (!shouldTrackLocation()) {
+        // Don't bother running service if not auth'ed.  We can't update the DB in that case.
+        FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+        if (u == null) {
             stopSelf();
             return;
         }
 
+        mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.toString(), MODE_PRIVATE);
+        mDB = new FirebaseDB(u.getUid(), this);
         mFetchAddressReceiver = new FetchAddressReceiver(new Handler());
-
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
@@ -74,9 +76,7 @@ public class LocationService extends Service implements
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
-        if (intent != null && intent.getBooleanExtra(STOP_EXTRA, false)) {
-            stopTrackingLocation();
-        } else if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
+        if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
             mGoogleApiClient.connect();
         }
         return START_STICKY;
@@ -84,14 +84,23 @@ public class LocationService extends Service implements
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if (!shouldTrackLocation()) {
+        updateLocationTracking();
+    }
+
+    private void updateLocationTracking() {
+        if (shouldTrackLocation()) {
+            startTrackingLocation();
+        } else {
             stopTrackingLocation();
-            return;
         }
-        startTrackingLocation();
     }
 
     private void startTrackingLocation() {
+        if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
+            mGoogleApiClient.connect();
+            return;
+        }
+
         if (getPackageManager().checkPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION, getPackageName()) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -117,17 +126,17 @@ public class LocationService extends Service implements
                 mGoogleApiClient, req, mLocationListener);
     }
 
-    private void stopTrackingLocation() {
+    void stopTrackingLocation() {
         Log.i(TAG, "stopping tracking");
         if (mLocationListener != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     mGoogleApiClient, mLocationListener);
         }
-        stopSelf();
     }
 
     private boolean shouldTrackLocation() {
-        return Geocoder.isPresent() &&
+        return FirebaseAuth.getInstance().getCurrentUser() != null &&
+                Geocoder.isPresent() &&
                 mPrefs != null &&
                 mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
     }
@@ -140,7 +149,36 @@ public class LocationService extends Service implements
         startService(intent);
     }
 
+    // Binder to FetchAddressIntentService.
     private final IBinder mBinder = new LocalBinder();
+
+    @Override
+    public void onLocationUpdated(LocationEvent e) {
+        // Do nothing -- UI already updated directly from geocoding callback.
+    }
+
+    LocationEvent getLastLocation() {
+        return mLastLocation;
+    }
+
+    void updateShowPrivateInfo(boolean show) {
+        mDB.updateShowPrivateInfo(show);
+    }
+
+    @Override
+    public void onShowPrivateInfoUpdated(boolean show) {
+        if (mActivity != null) {
+            mActivity.onShowPrivateInfoUpdated(show);
+        }
+    }
+
+    void updateShareLocation(boolean share) {
+        mPrefs.edit()
+                .putBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), share)
+                .commit();
+        mDB.updateShareLocation(share);
+        updateLocationTracking();
+    }
 
     public class LocalBinder extends Binder {
         LocationService getService() {
@@ -156,6 +194,7 @@ public class LocationService extends Service implements
     @Override
     public void onDestroy() {
         Log.i(TAG, "destroying LocationService");
+        stopTrackingLocation();
         super.onDestroy();
     }
 
@@ -182,15 +221,12 @@ public class LocationService extends Service implements
                     mLastLocation = new LocationEvent(
                             location.getTime(), address.getLocality(), address.getAdminArea(),
                             address.getCountryName(), "");
-                    if (mLocationEventObserver != null) {
-                        mLocationEventObserver.onLocationUpdated(mLastLocation);
+                    mDB.updateLocation(mLastLocation);
+                    if (mActivity != null) {
+                        mActivity.onLocationUpdated(mLastLocation);
                     }
                 }
             }
         }
-    }
-
-    LocationEvent getLastLocation() {
-        return mLastLocation;
     }
 }

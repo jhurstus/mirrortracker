@@ -12,6 +12,4 @@ public class Geofence {
     public float radius;
 
     public Geofence() {}
-
-    public Geofence
 }

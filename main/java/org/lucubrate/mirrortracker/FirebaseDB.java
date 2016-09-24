@@ -18,6 +18,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
 /**
  * Firebase realtime database data binding.
  */
@@ -26,8 +31,19 @@ public class FirebaseDB implements SignedInHandler, LocationEventObserver {
     @Override
     public void onLocationUpdated(LocationEvent e) {
         if (e != null) {
-            mModel.setLastKnownLocation(e.getCity() + ", " + e.getState());
+            mModel.setLastKnownLocation(
+                    e.getCity() + ", " + e.getState() + " at " + getTime(e.getTimestamp()));
         }
+    }
+
+    private String getTime(long timestamp) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(timestamp);
+        c.add(Calendar.MILLISECOND, TimeZone.getTimeZone("UTC").getOffset(c.getTimeInMillis()));
+
+        SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.US);
+        sdf.setTimeZone(TimeZone.getDefault());
+        return sdf.format(c.getTime());
     }
 
     /** Android databinding object that connects to Firebase realtime database. */

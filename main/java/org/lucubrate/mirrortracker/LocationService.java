@@ -177,9 +177,10 @@ public class LocationService extends Service implements
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             if (resultCode == SUCCESS_RESULT && resultData != null) {
                 Address address = resultData.getParcelable(RESULT_DATA_KEY);
-                if (address != null) {
+                Location location = resultData.getParcelable(LOCATION_DATA_EXTRA);
+                if (address != null && location != null) {
                     mLastLocation = new LocationEvent(
-                            0L, address.getLocality(), address.getAdminArea(),
+                            location.getTime(), address.getLocality(), address.getAdminArea(),
                             address.getCountryName(), "");
                     if (mLocationEventObserver != null) {
                         mLocationEventObserver.onLocationUpdated(mLastLocation);

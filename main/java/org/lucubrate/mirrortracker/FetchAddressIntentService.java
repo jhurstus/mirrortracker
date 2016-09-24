@@ -67,6 +67,7 @@ public class FetchAddressIntentService extends IntentService {
         } else {
             Bundle bundle = new Bundle();
             bundle.putParcelable(RESULT_DATA_KEY, addresses.get(0));
+            bundle.putParcelable(LOCATION_DATA_EXTRA, location);
             mReceiver.send(SUCCESS_RESULT, bundle);
         }
     }

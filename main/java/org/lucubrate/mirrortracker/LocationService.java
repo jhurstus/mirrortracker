@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -34,11 +35,20 @@ public class LocationService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
     final private static String TAG = "LocationService";
+
+    /** Service intent extra key, who's boolean value indicates if the service should be stopped. */
     final public static String STOP_EXTRA = "stop";
+
     private GoogleApiClient mGoogleApiClient;
     private SharedPreferences mPrefs;
     private LocationListener mLocationListener;
     private FetchAddressReceiver mFetchAddressReceiver;
+    private LocationEvent mLastLocation;
+    private LocationEventObserver mLocationEventObserver;
+
+    void setLocationEventObserver(LocationEventObserver o) {
+        mLocationEventObserver = o;
+    }
 
     @Override
     public void onCreate() {
@@ -58,14 +68,11 @@ public class LocationService extends Service implements
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
-
-        Log.i(TAG, "Created LocationService.");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        Log.i(TAG, "starting LocationService");
 
         if (intent != null && intent.getBooleanExtra(STOP_EXTRA, false)) {
             stopTrackingLocation();
@@ -88,7 +95,7 @@ public class LocationService extends Service implements
         if (getPackageManager().checkPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION, getPackageName()) !=
                 PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "ACCESS_FINE_LOCATION permission denied");
+            Log.w(TAG, "ACCESS_FINE_LOCATION permission denied");
             return;
         }
         Log.i(TAG, "starting tracking");
@@ -96,7 +103,6 @@ public class LocationService extends Service implements
         mLocationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                Log.i(TAG, location.toString());
                 sendGeocodeRequest(location);
             }
         };
@@ -134,9 +140,17 @@ public class LocationService extends Service implements
         startService(intent);
     }
 
+    private final IBinder mBinder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        LocationService getService() {
+            return LocationService.this;
+        }
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
@@ -162,10 +176,20 @@ public class LocationService extends Service implements
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             if (resultCode == SUCCESS_RESULT && resultData != null) {
-                // Address[addressLines=[0:"373 Clipper Street",1:"San Francisco, CA 94114",2:"USA"],feature=373,admin=California,sub-admin=null,locality=San Francisco,thoroughfare=Clipper Street,postalCode=94114,countryCode=US,countryName=United States,hasLatitude=true,latitude=37.748692,hasLongitude=true,longitude=-122.433177,phone=null,url=null,extras=null]
                 Address address = resultData.getParcelable(RESULT_DATA_KEY);
-                Log.i(TAG, "got result " + address.getAdminArea());
+                if (address != null) {
+                    mLastLocation = new LocationEvent(
+                            0L, address.getLocality(), address.getAdminArea(),
+                            address.getCountryName(), "");
+                    if (mLocationEventObserver != null) {
+                        mLocationEventObserver.onLocationUpdated(mLastLocation);
+                    }
+                }
             }
         }
+    }
+
+    LocationEvent getLastLocation() {
+        return mLastLocation;
     }
 }

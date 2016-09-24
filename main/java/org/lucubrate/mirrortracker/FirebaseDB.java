@@ -1,10 +1,13 @@
 package org.lucubrate.mirrortracker;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Switch;
@@ -15,21 +18,41 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.lucubrate.mirrortracker.BR;  // KEEP: needed for Android Studio.
-
 /**
  * Firebase realtime database data binding.
  */
-public class FirebaseDB implements SignedInHandler {
+public class FirebaseDB implements SignedInHandler, LocationEventObserver {
+
+    @Override
+    public void onLocationUpdated(LocationEvent e) {
+        if (e != null) {
+            mModel.setLastKnownLocation(e.getCity() + ", " + e.getState());
+        }
+    }
 
     /** Android databinding object that connects to Firebase realtime database. */
     public static class Model extends BaseObservable {
         private boolean showPrivateInfo;
         private boolean shareLocation;
+        private String lastKnownLocation;
 
-        private Model(boolean showPrivateInfo, boolean shareLocation) {
+        Model(String lastKnownLocation, boolean showPrivateInfo, boolean shareLocation) {
+            this.lastKnownLocation = lastKnownLocation;
             this.showPrivateInfo = showPrivateInfo;
             this.shareLocation = shareLocation;
+        }
+
+        /**
+         * @return Last known user location, if known.
+         */
+        @Bindable
+        public String getLastKnownLocation() {
+            return lastKnownLocation;
+        }
+
+        void setLastKnownLocation(String lastKnownLocation) {
+            this.lastKnownLocation = lastKnownLocation;
+            notifyPropertyChanged(BR.lastKnownLocation);
         }
 
         /**
@@ -40,7 +63,7 @@ public class FirebaseDB implements SignedInHandler {
             return showPrivateInfo;
         }
 
-        public void setShowPrivateInfo(boolean showPrivateInfo) {
+        void setShowPrivateInfo(boolean showPrivateInfo) {
             this.showPrivateInfo = showPrivateInfo;
             notifyPropertyChanged(BR.showPrivateInfo);
         }
@@ -53,7 +76,7 @@ public class FirebaseDB implements SignedInHandler {
             return shareLocation;
         }
 
-        public void setShareLocation(boolean shareLocation) {
+        void setShareLocation(boolean shareLocation) {
             this.shareLocation = shareLocation;
             notifyPropertyChanged(BR.shareLocation);
         }
@@ -70,6 +93,9 @@ public class FirebaseDB implements SignedInHandler {
     // Only set persistence once per activation, otherwise firebase crashes.
     private static boolean hasSetPersistence = false;
 
+    private LocationService mService;
+    private boolean mBound = false;
+
     FirebaseDB(String uid, SharedPreferences prefs, Context context) {
         mPrefs = prefs;
         mContext = context;
@@ -80,7 +106,7 @@ public class FirebaseDB implements SignedInHandler {
             mDB.setPersistenceEnabled(true);
         }
 
-        mModel = new Model(true, true);
+        mModel = new Model(mContext.getString(R.string.loading), true, true);
 
         showPrivateInfo = mDB.getReference("mirror/config/showPrivateInfo");
         showPrivateInfo.addValueEventListener(new ValueEventListener() {
@@ -109,9 +135,18 @@ public class FirebaseDB implements SignedInHandler {
                 Intent i = new Intent(mContext, LocationService.class);
                 if (!share) {
                     i.putExtra(LocationService.STOP_EXTRA, true);
+                    if (mBound) {
+                        mContext.unbindService(mConnection);
+                        mBound = false;
+                    }
                 }
                 mContext.startService(i);
                 mModel.setShareLocation(share);
+
+                if (share) {
+                    Intent bindIntent = new Intent(mContext, LocationService.class);
+                    mContext.bindService(bindIntent, mConnection, Context.BIND_AUTO_CREATE);
+                }
             }
 
             @Override
@@ -124,7 +159,7 @@ public class FirebaseDB implements SignedInHandler {
     /**
      * @return Android SignedInActivity databinding model, bound to FirebaseDB.
      */
-    public Model getModel() {
+    Model getModel() {
         return mModel;
     }
 
@@ -136,5 +171,30 @@ public class FirebaseDB implements SignedInHandler {
     @Override
     public void onShareLocationChecked(View view) {
         user.child("shareLocation").setValue(((Switch) view).isChecked());
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            LocationService.LocalBinder binder = (LocationService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+            mService.setLocationEventObserver(FirebaseDB.this);
+            onLocationUpdated(mService.getLastLocation());
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+
+    void onStop() {
+        if (mBound) {
+            mContext.unbindService(mConnection);
+            mBound = false;
+        }
     }
 }

@@ -44,8 +44,12 @@ public class SignedInActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
     }
 
-    /** Sync button handler. */
-    public void sync(View view) {
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mDB != null) {
+            mDB.onStop();
+        }
     }
 
     /** Sign Out button handler. */

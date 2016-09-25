@@ -220,7 +220,8 @@ public class LocationService extends Service implements
                 if (address != null && location != null) {
                     mLastLocation = new LocationEvent(
                             location.getTime(), address.getLocality(), address.getAdminArea(),
-                            address.getCountryName(), "");
+                            address.getCountryName(), location.getLatitude(),
+                            location.getLongitude(), "");
                     mDB.updateLocation(mLastLocation);
                     if (mActivity != null) {
                         mActivity.onLocationUpdated(mLastLocation);

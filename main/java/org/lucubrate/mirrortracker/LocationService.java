@@ -46,6 +46,8 @@ public class LocationService extends Service implements
     private FirebaseDbObserver mActivity;
     private FirebaseDB mDB;
 
+    private boolean mShowPrivateInfo;
+
     void setFireBaseDbObserver(FirebaseDbObserver o) {
         mActivity = o;
     }
@@ -162,14 +164,20 @@ public class LocationService extends Service implements
     }
 
     void updateShowPrivateInfo(boolean show) {
+        mShowPrivateInfo = show;
         mDB.updateShowPrivateInfo(show);
     }
 
     @Override
     public void onShowPrivateInfoUpdated(boolean show) {
+        mShowPrivateInfo = show;
         if (mActivity != null) {
             mActivity.onShowPrivateInfoUpdated(show);
         }
+    }
+
+    boolean showPrivateInfo() {
+        return mShowPrivateInfo;
     }
 
     void updateShareLocation(boolean share) {
@@ -178,6 +186,10 @@ public class LocationService extends Service implements
                 .commit();
         mDB.updateShareLocation(share);
         updateLocationTracking();
+    }
+
+    boolean shareLocation() {
+        return mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
     }
 
     public class LocalBinder extends Binder {

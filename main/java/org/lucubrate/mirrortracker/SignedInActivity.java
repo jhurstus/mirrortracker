@@ -64,6 +64,8 @@ public class SignedInActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         mModel = new Model(getString(R.string.loading), true, true);
+        syncModelToService();
+
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
                 this, R.layout.activity_signed_in);
         binding.setModel(mModel);
@@ -197,6 +199,14 @@ public class SignedInActivity extends AppCompatActivity
         }
     }
 
+    private void syncModelToService() {
+        if (mBound  && mModel != null) {
+            mModel.setShowPrivateInfo(mService.showPrivateInfo());
+            mModel.setShareLocation(mService.shareLocation());
+            onLocationUpdated(mService.getLastLocation());
+        }
+    }
+
     // Bound connection to LocationService.
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -206,7 +216,7 @@ public class SignedInActivity extends AppCompatActivity
             mService = binder.getService();
             mBound = true;
             mService.setFireBaseDbObserver(SignedInActivity.this);
-            onLocationUpdated(mService.getLastLocation());
+            syncModelToService();
         }
 
         @Override

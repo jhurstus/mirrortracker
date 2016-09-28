@@ -122,7 +122,7 @@ public class LocationService extends Service implements
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setFastestInterval(60 * 1000)  // receive updates no faster than minutely
                 .setInterval(30 * 60 * 1000)  // try to update at least every 30 minutes
-                .setSmallestDisplacement(5);  // no updates for deltas < 5 meters.
+                .setSmallestDisplacement(15);  // no updates for deltas < 15 meters.
 
         LocationServices.FusedLocationApi.requestLocationUpdates(
                 mGoogleApiClient, req, mLocationListener);

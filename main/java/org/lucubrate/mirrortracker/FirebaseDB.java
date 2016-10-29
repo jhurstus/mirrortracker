@@ -11,11 +11,9 @@ import com.google.firebase.database.ValueEventListener;
 /**
  * Firebase realtime database data binding.
  */
-public class FirebaseDB  {
-
+class FirebaseDB  {
     final private static String TAG = "FirebaseDB";
 
-    private FirebaseDatabase mDB;
     private DatabaseReference showPrivateInfo;
     private DatabaseReference user;
     // Only set persistence once per activation, otherwise firebase crashes.
@@ -24,15 +22,15 @@ public class FirebaseDB  {
     private LocationService mService;
 
     FirebaseDB(String uid, LocationService service) {
-        mDB = FirebaseDatabase.getInstance();
+        FirebaseDatabase db = FirebaseDatabase.getInstance();
         if (!hasSetPersistence) {
             hasSetPersistence = true;
-            mDB.setPersistenceEnabled(true);
+            db.setPersistenceEnabled(true);
         }
 
         mService = service;
 
-        showPrivateInfo = mDB.getReference("mirror/config/showPrivateInfo");
+        showPrivateInfo = db.getReference("mirror/config/showPrivateInfo");
         showPrivateInfo.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -45,7 +43,7 @@ public class FirebaseDB  {
             }
         });
 
-        user = mDB.getReference("users/" + uid);
+        user = db.getReference("users/" + uid);
     }
 
     void updateLocation(LocationEvent e) {

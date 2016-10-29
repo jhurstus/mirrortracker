@@ -3,6 +3,7 @@ package org.lucubrate.mirrortracker;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(
-            int requestCode, String[] permissions, int[] grantResults) {
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         for (int i = 0; i < permissions.length; i++) {
             if (TextUtils.equals(permissions[i], Manifest.permission.ACCESS_FINE_LOCATION)) {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {

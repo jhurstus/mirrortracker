@@ -229,7 +229,7 @@ public class LocationService extends Service implements
 
         LocationRequest req = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setFastestInterval(60 * 1000)  // receive updates no faster than minutely
+                .setFastestInterval(20 * 60 * 1000)  // receive updates no faster than 20 minutely
                 .setInterval(30 * 60 * 1000)  // try to update at least every 30 minutes
                 .setSmallestDisplacement(15);  // no updates for deltas < 15 meters.
 

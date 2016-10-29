@@ -24,6 +24,7 @@ import org.lucubrate.mirrortracker.databinding.ActivitySignedInBinding;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -101,6 +102,9 @@ public class SignedInActivity extends AppCompatActivity
     public void onShowPrivateInfoUpdated(boolean show) {
         mModel.setShowPrivateInfo(show);
     }
+
+    @Override
+    public void onGeofencesUpdated(List<Geofence> geofences) {}
 
     @Override
     public void onShowPrivateInfoChecked(View view) {

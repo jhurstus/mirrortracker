@@ -6,7 +6,10 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.List;
 
 /**
  * Firebase realtime database data binding.
@@ -35,6 +38,21 @@ class FirebaseDB  {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mService.onShowPrivateInfoUpdated(dataSnapshot.getValue(Boolean.class));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.w(TAG, "Failed to read value.", databaseError.toException());
+            }
+        });
+
+        DatabaseReference geofences = db.getReference("mirror/geofences");
+        geofences.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                GenericTypeIndicator<List<Geofence>> t =
+                        new GenericTypeIndicator<List<Geofence>>() {};
+                mService.onGeofencesUpdated(dataSnapshot.getValue(t));
             }
 
             @Override

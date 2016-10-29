@@ -1,6 +1,7 @@
 package org.lucubrate.mirrortracker;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,19 +20,31 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.GeofencingEvent;
+import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
+import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
+import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.LOCATION_DATA_EXTRA;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.RECEIVER;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.RESULT_DATA_KEY;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.SUCCESS_RESULT;
 
 /**
- * Background service that periodically pulls device location via GMS location services.
+ * Background service that receives location updates and forwards them to mirror server.
+ *
+ * Location is primarily tracked using GMS Geofence enter/exit events.  This is supplemented by a
+ * generic location tracker, since it's possible for the Geofence events to fail in various
+ * scenarios (not to mention any bugs in the Geofence implementation).
  */
 public class LocationService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
@@ -45,6 +58,7 @@ public class LocationService extends Service implements
     private LocationEvent mLastLocation;
     private FirebaseDbObserver mActivity;
     private FirebaseDB mDB;
+    private List<Geofence> mGeofences;
 
     private boolean mShowPrivateInfo;
 
@@ -75,12 +89,105 @@ public class LocationService extends Service implements
     }
 
     @Override
+    public void onGeofencesUpdated(List<Geofence> geofences) {
+        removeGeofences();
+        mGeofences = geofences;
+        if (shouldTrackLocation()) {
+            addGeofences();
+        }
+    }
+
+    /** Whether the service is in a state in which it can mutate GMS geofence state. */
+    private boolean canUpdateGeofences() {
+        if (mGeofences == null || mGeofences.isEmpty() || mGoogleApiClient == null) {
+            return false;
+        }
+        if (!mGoogleApiClient.isConnected()) {
+            if (!mGoogleApiClient.isConnecting()) {
+                mGoogleApiClient.connect();
+            }
+            return false;
+        }
+
+        if (getPackageManager().checkPermission(
+                Manifest.permission.ACCESS_FINE_LOCATION, getPackageName()) !=
+                PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "ACCESS_FINE_LOCATION permission denied");
+            return false;
+        }
+        return true;
+    }
+
+    /** Starts tracking geofences. */
+    private void addGeofences() {
+        if (!canUpdateGeofences()) {
+            return;
+        }
+
+        List<com.google.android.gms.location.Geofence> fences = new ArrayList<>(mGeofences.size());
+        for (Geofence fence : mGeofences) {
+            fences.add(new com.google.android.gms.location.Geofence.Builder()
+                    .setRequestId(fence.label)
+                    .setCircularRegion(fence.lat, fence.lng, fence.radius)
+                    .setExpirationDuration(NEVER_EXPIRE)
+                    .setTransitionTypes(GEOFENCE_TRANSITION_ENTER | GEOFENCE_TRANSITION_EXIT)
+                    .build());
+        }
+        GeofencingRequest fenceReq = new GeofencingRequest.Builder()
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+                .addGeofences(fences)
+                .build();
+        Intent intent = new Intent(this, LocationService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(
+                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        try {
+            LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, fenceReq, pendingIntent);
+        } catch (SecurityException e) {
+            // Should never happen.  Permission checked in canUpdateGeofences.
+        }
+    }
+
+    /** Stop tracking geofences. */
+    private void removeGeofences() {
+        if (!canUpdateGeofences()) {
+            return;
+        }
+        List<String> labels = new ArrayList<>(mGeofences.size());
+        for (Geofence f : mGeofences) {
+            labels.add(f.label);
+        }
+        LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, labels);
+    }
+
+    private void handleGeofenceIntent(Intent intent) {
+        GeofencingEvent e = GeofencingEvent.fromIntent(intent);
+        if (e.hasError()) {
+            Log.e(TAG, "GeofencingEvent error: " + Integer.toString(e.getErrorCode()));
+        } else {
+            int geofenceTransition = e.getGeofenceTransition();
+            if (geofenceTransition == GEOFENCE_TRANSITION_ENTER ||
+                    geofenceTransition == GEOFENCE_TRANSITION_EXIT) {
+                Location loc = e.getTriggeringLocation();
+                if (loc != null) {
+                    sendGeocodeRequest(loc);
+                }
+            }
+        }
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
         if (!mGoogleApiClient.isConnected() && !mGoogleApiClient.isConnecting()) {
             mGoogleApiClient.connect();
         }
+
+        if (intent != null) {
+            handleGeofenceIntent(intent);
+        }
+
         return START_STICKY;
     }
 
@@ -111,6 +218,8 @@ public class LocationService extends Service implements
         }
         Log.i(TAG, "starting tracking");
 
+        addGeofences();
+
         mLocationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
@@ -121,7 +230,7 @@ public class LocationService extends Service implements
         LocationRequest req = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setFastestInterval(60 * 1000)  // receive updates no faster than minutely
-                .setInterval(15 * 60 * 1000)  // try to update at least every 15 minutes
+                .setInterval(30 * 60 * 1000)  // try to update at least every 30 minutes
                 .setSmallestDisplacement(15);  // no updates for deltas < 15 meters.
 
         LocationServices.FusedLocationApi.requestLocationUpdates(
@@ -130,6 +239,7 @@ public class LocationService extends Service implements
 
     void stopTrackingLocation() {
         Log.i(TAG, "stopping tracking");
+        removeGeofences();
         if (mLocationListener != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     mGoogleApiClient, mLocationListener);

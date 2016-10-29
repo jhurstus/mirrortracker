@@ -7,9 +7,11 @@ import com.google.firebase.database.IgnoreExtraProperties;
  */
 @IgnoreExtraProperties
 public class Geofence {
+    public String label;
     public double lat;
     public double lng;
-    public float radius;
+    public int radius;
 
+    // Default constructor required for FirebaseDB integration.
     public Geofence() {}
 }

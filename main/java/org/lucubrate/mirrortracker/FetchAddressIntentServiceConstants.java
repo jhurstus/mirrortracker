@@ -4,7 +4,7 @@ package org.lucubrate.mirrortracker;
  * Intent constants for use with {@link FetchAddressIntentService}.
  */
 final class FetchAddressIntentServiceConstants {
-    private FetchAddressIntentServiceConstants() {};
+    private FetchAddressIntentServiceConstants() {}
 
     private static final String PACKAGE_NAME = "org.lucubrate.mirrortracker";
 

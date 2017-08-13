@@ -9,6 +9,8 @@ import android.support.v7.widget.Toolbar;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.ArrayList;
+
 public class SignedOutActivity extends AppCompatActivity {
 
     private final static int RC_SIGN_IN = 42;
@@ -36,7 +38,10 @@ public class SignedOutActivity extends AppCompatActivity {
             startActivityForResult(
                     AuthUI.getInstance()
                             .createSignInIntentBuilder()
-                            .setProviders(AuthUI.GOOGLE_PROVIDER)
+                            .setAvailableProviders(new ArrayList<AuthUI.IdpConfig>(){{
+                                add(new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER)
+                                        .build());
+                            }})
                             .setIsSmartLockEnabled(true)
                             .build(),
                     RC_SIGN_IN);

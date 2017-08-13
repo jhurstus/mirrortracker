@@ -31,7 +31,7 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
+    import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
 import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.LOCATION_DATA_EXTRA;

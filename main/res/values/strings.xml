@@ -5,4 +5,5 @@
     <string name="share_location">Share location</string>
     <string name="sync_now">Sync now</string>
     <string name="loading">...</string>
+    <string name="sign_in">Sign in</string>
 </resources>

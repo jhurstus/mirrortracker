@@ -76,7 +76,7 @@ public class SignedInActivity extends AppCompatActivity
             onLocationUpdated(mService.getLastLocation());
         }
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
     }
 

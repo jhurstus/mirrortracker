@@ -1,5 +1,6 @@
 package org.lucubrate.mirrortracker;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.firebase.database.DataSnapshot;
@@ -36,12 +37,12 @@ class FirebaseDB  {
         showPrivateInfo = db.getReference("mirror/config/showPrivateInfo");
         showPrivateInfo.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 mService.onShowPrivateInfoUpdated(dataSnapshot.getValue(Boolean.class));
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.w(TAG, "Failed to read value.", databaseError.toException());
             }
         });
@@ -49,14 +50,14 @@ class FirebaseDB  {
         DatabaseReference geofences = db.getReference("mirror/geofences");
         geofences.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 GenericTypeIndicator<List<Geofence>> t =
                         new GenericTypeIndicator<List<Geofence>>() {};
                 mService.onGeofencesUpdated(dataSnapshot.getValue(t));
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.w(TAG, "Failed to read value.", databaseError.toException());
             }
         });

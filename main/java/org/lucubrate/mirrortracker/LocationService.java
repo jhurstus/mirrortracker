@@ -32,7 +32,7 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.ArrayList;
 import java.util.List;
 
-    import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
+import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
 import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
 import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.LOCATION_DATA_EXTRA;
@@ -57,6 +57,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
     private FirebaseDbObserver mActivity;
     private FirebaseDB mDB;
     private List<Geofence> mGeofences;
+    private DebugLog mDebugLog;
 
     private boolean mShowPrivateInfo;
 
@@ -64,10 +65,19 @@ public class LocationService extends Service implements FirebaseDbObserver {
         mActivity = o;
     }
 
+    void setDebugLogWriteOberver(DebugLogWriteObserver o) {
+        mDebugLog.setObserver(o);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         Log.i(TAG, "LocationService creating.");
+
+        if (mDebugLog == null) {
+            mDebugLog = new DebugLog(this.getFilesDir());
+        }
+        mDebugLog.logServiceStarted();
 
         // Don't bother running service if not auth'ed.  We can't update the DB in that case.
         FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
@@ -159,6 +169,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
             int geofenceTransition = e.getGeofenceTransition();
             if (geofenceTransition == GEOFENCE_TRANSITION_ENTER ||
                     geofenceTransition == GEOFENCE_TRANSITION_EXIT) {
+                mDebugLog.logGeofencingEvent(e);
                 Location loc = e.getTriggeringLocation();
                 if (loc != null) {
                     sendGeocodeRequest(loc);
@@ -200,6 +211,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
         mLocationCallback =  new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult result) {
+                mDebugLog.logLocationUpdated(result);
                 sendGeocodeRequest(result.getLastLocation());
             }
         };
@@ -283,6 +295,13 @@ public class LocationService extends Service implements FirebaseDbObserver {
         return mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
     }
 
+    List<String> debugLogLines() {
+        if (mDebugLog != null) {
+            return mDebugLog.getLogLines();
+        }
+        return new ArrayList<>();
+    }
+
     public class LocalBinder extends Binder {
         LocationService getService() {
             return LocationService.this;
@@ -298,6 +317,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
     public void onDestroy() {
         Log.i(TAG, "destroying LocationService");
         stopTrackingLocation();
+        mDebugLog.logServiceStopped();
         super.onDestroy();
     }
 

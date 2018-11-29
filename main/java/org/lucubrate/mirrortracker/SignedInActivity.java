@@ -12,8 +12,10 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -23,14 +25,16 @@ import com.google.firebase.auth.FirebaseAuth;
 import org.lucubrate.mirrortracker.databinding.ActivitySignedInBinding;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
 /** Main activity, shown to signed-in users. */
 public class SignedInActivity extends AppCompatActivity
-        implements FirebaseDbObserver, SignedInHandler {
+        implements FirebaseDbObserver, SignedInHandler, DebugLogWriteObserver {
 
     private Model mModel;
 
@@ -64,7 +68,8 @@ public class SignedInActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mModel = new Model(getString(R.string.loading), true, true);
+        mModel = new Model(
+                getString(R.string.loading), true, true, "");
         syncModelToService();
 
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
@@ -78,6 +83,8 @@ public class SignedInActivity extends AppCompatActivity
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        ((TextView) findViewById(R.id.debugLog)).setMovementMethod(new ScrollingMovementMethod());
     }
 
     @Override
@@ -85,6 +92,7 @@ public class SignedInActivity extends AppCompatActivity
         super.onStop();
         if (mBound) {
             mService.setFireBaseDbObserver(null);
+            mService.setDebugLogWriteOberver(null);
             unbindService(mConnection);
             mBound = false;
         }
@@ -151,16 +159,28 @@ public class SignedInActivity extends AppCompatActivity
         return sdf.format(c.getTime());
     }
 
+    @Override
+    public void onLogWritten(List<String> logLines) {
+        if (mModel != null) {
+            List<String> descending = new ArrayList<>(logLines);
+            Collections.reverse(descending);
+            mModel.setDebugLog(String.join("\n", descending));
+        }
+    }
+
     /** Android databinding model for layout. */
     public static class Model extends BaseObservable {
         private boolean showPrivateInfo;
         private boolean shareLocation;
         private String lastKnownLocation;
+        private String debugLog;
 
-        Model(String lastKnownLocation, boolean showPrivateInfo, boolean shareLocation) {
+        Model(String lastKnownLocation, boolean showPrivateInfo, boolean shareLocation,
+              String debugLog) {
             this.lastKnownLocation = lastKnownLocation;
             this.showPrivateInfo = showPrivateInfo;
             this.shareLocation = shareLocation;
+            this.debugLog = debugLog;
         }
 
         /**
@@ -201,6 +221,19 @@ public class SignedInActivity extends AppCompatActivity
             this.lastKnownLocation = lastKnownLocation;
             notifyPropertyChanged(BR.lastKnownLocation);
         }
+
+        /**
+         * @return Debug log text, if any.
+         */
+        @Bindable
+        public String getDebugLog() {
+            return debugLog;
+        }
+
+        void setDebugLog(String debugLog) {
+            this.debugLog = debugLog;
+            notifyPropertyChanged(BR.debugLog);
+        }
     }
 
     private void syncModelToService() {
@@ -220,6 +253,8 @@ public class SignedInActivity extends AppCompatActivity
             mService = binder.getService();
             mBound = true;
             mService.setFireBaseDbObserver(SignedInActivity.this);
+            mService.setDebugLogWriteOberver(SignedInActivity.this);
+            SignedInActivity.this.onLogWritten(mService.debugLogLines());
             syncModelToService();
         }
 

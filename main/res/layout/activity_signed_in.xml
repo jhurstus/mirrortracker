@@ -136,6 +136,24 @@
                 android:onClick="@{handler::onSignOutClicked}"
                 android:text="@string/sign_out" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="@dimen/activity_vertical_margin"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                android:background="@color/separator" />
+
+            <TextView
+                android:id="@+id/debugLog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                android:paddingStart="@dimen/activity_horizontal_margin"
+                android:text="@{model.debugLog}"
+                android:textColor="@color/bodyTextColor"
+                android:scrollbars = "vertical"
+                android:textSize="12sp" />
+
         </LinearLayout>
 
     </android.support.design.widget.CoordinatorLayout>

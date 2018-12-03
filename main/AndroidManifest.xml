@@ -30,22 +30,35 @@
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBar"/>
 
-        <receiver android:name=".BootReceiver">
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".PathsenseGeofenceEventReceiver" />
 
         <service
             android:name=".LocationService"
-            android:exported="false"/>
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
             android:name=".FetchAddressIntentService"
-            android:exported="false"/>
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
+
+        <meta-data android:name="com.pathsense.android.sdk.CLIENT_ID" android:value="q2LMJeX1oupDTKwsrz7KsaxaFjBhhScFfYwH9JRO" />
+        <meta-data android:name="com.pathsense.android.sdk.API_KEY" android:value="thmmC7opnjaNVNWZi3xlP5KArcGPvCcKqztW1RM1" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCZvXQTeVckIxJUPDY8l_rpdrKS1DxGC7s"/>
     </application>
 </manifest>

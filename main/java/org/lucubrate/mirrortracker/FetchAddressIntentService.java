@@ -1,12 +1,15 @@
 package org.lucubrate.mirrortracker;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import java.io.IOException;
@@ -24,17 +27,19 @@ import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.SUC
  *
  * <p>See {@link FetchAddressIntentServiceConstants} for sending/receiving intent info.
  */
-public class FetchAddressIntentService extends IntentService {
+public class FetchAddressIntentService extends JobIntentService {
     private final static String TAG = "FetchAddressService";
 
     protected ResultReceiver mReceiver;
 
-    public FetchAddressIntentService() {
-        super("FetchAddressIntentService");
+    static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, FetchAddressIntentService.class, 0x02, work);
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
+        Log.d(TAG, "handling fetchaddress job");
+
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
 
         String errorMessage = "";

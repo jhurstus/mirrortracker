@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -16,6 +17,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ResultReceiver;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -47,7 +50,7 @@ import static org.lucubrate.mirrortracker.FetchAddressIntentServiceConstants.SUC
  * generic location tracker, since it's possible for the Geofence events to fail in various
  * scenarios (not to mention any bugs in the Geofence implementation).
  */
-public class LocationService extends Service implements FirebaseDbObserver {
+public class LocationService extends JobIntentService implements FirebaseDbObserver {
     final private static String TAG = "LocationService";
 
     private SharedPreferences mPrefs;
@@ -249,7 +252,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
         Intent intent = new Intent(this, FetchAddressIntentService.class);
         intent.putExtra(RECEIVER, mFetchAddressReceiver);
         intent.putExtra(LOCATION_DATA_EXTRA, location);
-        startService(intent);
+        FetchAddressIntentService.enqueueWork(getApplicationContext(), intent);
     }
 
     // Binder to FetchAddressIntentService.
@@ -316,9 +319,17 @@ public class LocationService extends Service implements FirebaseDbObserver {
     @Override
     public void onDestroy() {
         Log.i(TAG, "destroying LocationService");
-        stopTrackingLocation();
         mDebugLog.logServiceStopped();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onHandleWork(@NonNull Intent intent) {
+        Log.d("boot", "handle work");
+    }
+
+    static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, LocationService.class, 0x01, work);
     }
 
     private class FetchAddressReceiver extends ResultReceiver {
@@ -329,6 +340,7 @@ public class LocationService extends Service implements FirebaseDbObserver {
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             if (resultCode == SUCCESS_RESULT && resultData != null) {
+                Log.d(TAG, "syncing new location to server");
                 Address address = resultData.getParcelable(RESULT_DATA_KEY);
                 Location location = resultData.getParcelable(LOCATION_DATA_EXTRA);
                 if (address != null && location != null) {

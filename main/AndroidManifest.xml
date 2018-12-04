@@ -38,8 +38,6 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        <receiver
-            android:name=".PathsenseGeofenceEventReceiver" />
 
         <service
             android:name=".LocationService"
@@ -54,11 +52,5 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
-        <meta-data android:name="com.pathsense.android.sdk.CLIENT_ID" android:value="q2LMJeX1oupDTKwsrz7KsaxaFjBhhScFfYwH9JRO" />
-        <meta-data android:name="com.pathsense.android.sdk.API_KEY" android:value="thmmC7opnjaNVNWZi3xlP5KArcGPvCcKqztW1RM1" />
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCZvXQTeVckIxJUPDY8l_rpdrKS1DxGC7s"/>
     </application>
 </manifest>

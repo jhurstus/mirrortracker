@@ -1,8 +1,10 @@
 package org.lucubrate.mirrortracker;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -20,13 +22,29 @@ class FirebaseDB  {
 
     private DatabaseReference showPrivateInfo;
     private DatabaseReference user;
-    // Only set persistence once per activation, otherwise firebase crashes.
     private static boolean hasSetPersistence = false;
 
     private LocationService mService;
 
-    FirebaseDB(String uid, LocationService service) {
+    private static FirebaseDB db;
+
+    /**
+     * @param uid firebase user (from {@link FirebaseAuth#getCurrentUser()} to which per-user data
+     *            will be written
+     * @param service if available, LocationService to which DB updates will be posted
+     * @return singleton FirebaseDB instance
+     */
+    static FirebaseDB getInstance(@NonNull String uid, @Nullable LocationService service) {
+        if (db == null) {
+            db = new FirebaseDB(uid, service);
+        }
+        return db;
+    }
+
+    private FirebaseDB(String uid, LocationService service) {
         FirebaseDatabase db = FirebaseDatabase.getInstance();
+
+        // Only set persistence once per activation, otherwise firebase crashes.
         if (!hasSetPersistence) {
             hasSetPersistence = true;
             db.setPersistenceEnabled(true);
@@ -38,7 +56,10 @@ class FirebaseDB  {
         showPrivateInfo.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                mService.onShowPrivateInfoUpdated(dataSnapshot.getValue(Boolean.class));
+                if (mService != null) {
+                    Boolean showPrivateInfo = dataSnapshot.getValue(Boolean.class);
+                    mService.onShowPrivateInfoUpdated(showPrivateInfo != null && showPrivateInfo);
+                }
             }
 
             @Override
@@ -53,7 +74,9 @@ class FirebaseDB  {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 GenericTypeIndicator<List<Geofence>> t =
                         new GenericTypeIndicator<List<Geofence>>() {};
-                mService.onGeofencesUpdated(dataSnapshot.getValue(t));
+                if (mService != null) {
+                    mService.onGeofencesUpdated(dataSnapshot.getValue(t));
+                }
             }
 
             @Override
@@ -65,16 +88,26 @@ class FirebaseDB  {
         user = db.getReference("users/" + uid);
     }
 
+    /**
+     * @param service LocationServing instance to which db updates will be posted
+     */
+    void setLocationService(@Nullable LocationService service) {
+        mService = service;
+    }
+
+    /** Updates current user location. */
     void updateLocation(LocationEvent e) {
         if (e != null) {
             user.child("location").setValue(e);
         }
     }
 
+    /** Updates whether to show private info on mirror. */
     void updateShowPrivateInfo(boolean show) {
         showPrivateInfo.setValue(show);
     }
 
+    /** Updates whether to share location of current user. */
     void updateShareLocation(boolean share) {
         user.child("shareLocation").setValue(share);
     }

@@ -29,6 +29,7 @@ import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
 final class DebugLog {
     final private static String FILE_NAME = "debug_log.json";
     final private static int MAX_LOG_LINES = 1000;
+    private static DebugLog mDebugLog;
 
     private File mLogFile;
 
@@ -36,9 +37,18 @@ final class DebugLog {
     private DebugLogWriteObserver observer;
 
     /**
+     * Gets singleton instance of DebugLog.
      * @param fileDir directory to which the debug log file will be written
      */
-    DebugLog(File fileDir) {
+    static DebugLog getInstance(File fileDir) {
+        if (mDebugLog == null) {
+            mDebugLog = new DebugLog(fileDir);
+        }
+        return mDebugLog;
+    }
+
+
+    private DebugLog(File fileDir) {
         mLogLines = new ArrayList<>();
 
         mLogFile = new File(fileDir, FILE_NAME);
@@ -149,6 +159,11 @@ final class DebugLog {
                 String.format(Locale.getDefault(), "location %3.8f %3.8f",
                 result.getLastLocation().getLatitude(),
                 result.getLastLocation().getLongitude()));
+        write();
+    }
+
+    void logDbWrite() {
+        mLogLines.add(timestamp() + "updated location in firebase");
         write();
     }
 }

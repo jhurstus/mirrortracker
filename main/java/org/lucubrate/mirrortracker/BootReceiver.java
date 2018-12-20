@@ -1,25 +1,30 @@
 package org.lucubrate.mirrortracker;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-/** Start location background service on device boot. */
+/**
+ * Start location background service on device boot.
+ *
+ * This is critical in order for background location updates and geofencing to be enabled whenever
+ * device is on (as opposed to only after user opens app).
+ */
 public class BootReceiver extends BroadcastReceiver {
+    private static final String TAG = "BootReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d("boot", "received the boot");
-        if (intent == null || intent.getAction() == null) {
+        Log.d(TAG, "received boot signal");
+
+        if (intent == null) {
             return;
         }
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Log.d("boot", "bootin");
-            Intent serviceIntent = new Intent(context, LocationService.class);
-            LocationService.enqueueWork(context, new Intent());
+            Log.d(TAG, "enqueueing job on LocationService to wake it up");
+            LocationService.enqueueWork(context);
         }
     }
 }

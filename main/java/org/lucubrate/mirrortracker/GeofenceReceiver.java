@@ -7,6 +7,8 @@ import android.location.Location;
 import android.util.Log;
 
 import com.google.android.gms.location.GeofencingEvent;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
@@ -38,7 +40,13 @@ public class GeofenceReceiver extends BroadcastReceiver {
             Location loc = e.getTriggeringLocation();
             if (loc != null) {
                 Log.d(TAG, "sending fused location to db");
-                FirebaseLocationWriteService.enqueueWork(context, loc);
+
+                FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+                if (u == null) {
+                    Log.e(TAG, "no firebase user for which to update location");
+                    return;
+                }
+                FirebaseDB.getInstance(u.getUid(), null).updateLocation(context, loc);
             } else {
                 Log.d(TAG, "location unavailable");
             }

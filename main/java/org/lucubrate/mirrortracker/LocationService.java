@@ -32,8 +32,6 @@ import java.util.List;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
 import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
-import static org.lucubrate.mirrortracker.FirebaseLocationWriteService.LOCATION_DATA_EXTRA;
-import static org.lucubrate.mirrortracker.FirebaseLocationWriteService.RESULT_DATA_KEY;
 
 /**
  * Background service that initiates location tracking and provides data to a possibly bound
@@ -45,13 +43,24 @@ import static org.lucubrate.mirrortracker.FirebaseLocationWriteService.RESULT_DA
  *
  * This service was originally designed to run continuously in the background and handle all db and
  * model reads/writes.  Since Android O though, that's no longer possible, so location tracking is
- * delegated to {@link FusedLocationReceiver}, {@link GeofenceReceiver}, and
- * {@link FirebaseLocationWriteService}.  Data flow is (system location updates) --broadcast-->
- * (FusedLocationReceiver|GeofenceReceiver) --job--> FirebaseLocationWriteService --servicestart-->
- * LocationService.
+ * delegated to {@link FusedLocationReceiver} and {@link GeofenceReceiver}.  Data flow is:
+ * (system location updates) --broadcast--> (FusedLocationReceiver|GeofenceReceiver) --call-->
+ * FirebaseDB --servicestart--> LocationService.
  */
 public class LocationService extends JobIntentService implements FirebaseDbObserver {
     final private static String TAG = "LocationService";
+
+    /**
+     * Key for parceled {@link Location} object posted to {@link LocationService} (if running) after
+     * writing location to Firebase DB.
+     */
+    static final String LOCATION_DATA_EXTRA = "org.lucubrate.mirrortracker.LOCATION_DATA_EXTRA";
+
+    /**
+     * Key for parceled {@link Address} object posted to {@link LocationService} (if running) after
+     * writing location to Firebase DB.
+     */
+    static final String RESULT_DATA_KEY =  "org.lucubrate.mirrortracker.RESULT_DATA_KEY";
 
     private SharedPreferences mPrefs;
     private LocationEvent mLastLocation;
@@ -104,8 +113,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
         super.onStartCommand(intent, flags, startId);
         Log.d(TAG, "onStartCommand");
 
-        // Handle start commands from FirebaseLocationWriteService, which notify of updated user
-        // locations.
+        // Handle start commands from FirebaseDB, which notify of updated user locations.
         if (intent.hasExtra(RESULT_DATA_KEY) && intent.hasExtra(LOCATION_DATA_EXTRA)) {
             Address address = intent.getParcelableExtra(RESULT_DATA_KEY);
             Location location = intent.getParcelableExtra(LOCATION_DATA_EXTRA);
@@ -114,7 +122,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
                         location.getTime(), address.getLocality(), address.getAdminArea(),
                         address.getCountryName(), location.getLatitude(),
                         location.getLongitude(), "");
-                Log.d(TAG, "got updated location from FirebaseLocationWriteService");
+                Log.d(TAG, "got updated location from FirebaseDB");
                 if (mActivity != null) {
                     mActivity.onLocationUpdated(mLastLocation);
                 }
@@ -308,12 +316,12 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
                 mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
     }
 
-    // Binder to FirebaseLocationWriteService.
+    // Binder to SignedInActivity.
     private final IBinder mBinder = new LocalBinder();
 
     @Override
     public void onLocationUpdated(LocationEvent e) {
-        // Do nothing -- UI already updated directly from geocoding callback.
+        // Do nothing -- UI already updated directly from FirebaseDB callback in #onStartCommand.
     }
 
     LocationEvent getLastLocation() {

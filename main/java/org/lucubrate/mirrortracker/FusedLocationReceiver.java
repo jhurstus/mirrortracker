@@ -8,6 +8,8 @@ import android.util.Log;
 
 import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 /**
  * BroadcastReceiver that processes updates from
@@ -49,7 +51,12 @@ public class FusedLocationReceiver extends BroadcastReceiver {
         Location loc = result.getLastLocation();
         if (loc != null) {
             Log.d(TAG, "sending fused location to db");
-            FirebaseLocationWriteService.enqueueWork(context, loc);
+            FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+            if (u == null) {
+                Log.e(TAG, "no firebase user for which to update location");
+                return;
+            }
+            FirebaseDB.getInstance(u.getUid(), null).updateLocation(context, loc);
         } else {
             Log.d(TAG, "location unavailable");
         }

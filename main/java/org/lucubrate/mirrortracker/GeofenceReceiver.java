@@ -33,6 +33,11 @@ public class GeofenceReceiver extends BroadcastReceiver {
             return;
         }
 
+        if (!NetworkCheck.isNetworkAvailable(context)) {
+            Log.d(TAG, "ignoring geofence evt because we can't ping it to the network now.");
+            return;
+        }
+
         int geofenceTransition = e.getGeofenceTransition();
         if (geofenceTransition == GEOFENCE_TRANSITION_ENTER ||
                 geofenceTransition == GEOFENCE_TRANSITION_EXIT) {

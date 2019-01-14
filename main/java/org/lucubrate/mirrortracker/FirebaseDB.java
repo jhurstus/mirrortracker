@@ -132,13 +132,13 @@ class FirebaseDB  {
 
         Log.d(TAG, "syncing geocoded location to db");
         Address address = addresses.get(0);
-        LocationEvent e = new LocationEvent(
+        LocationEvent ev = new LocationEvent(
                 location.getTime(), address.getLocality(), address.getAdminArea(),
                 address.getCountryName(), location.getLatitude(),
                 location.getLongitude(), "");
 
-        DebugLog.getInstance(context.getFilesDir()).logDbWrite();
-        user.child("location").setValue(e);
+        DatabaseReference.goOnline();
+        user.child("location").setValue(ev);
         Log.i(TAG, "updated location in firebase");
 
         // If LocationService is running, notify it of updated location so it can update its state
@@ -152,6 +152,15 @@ class FirebaseDB  {
             i.putExtras(bundle);
 
             context.startService(i);
+        }
+
+        DebugLog.getInstance(context.getFilesDir()).logDbWrite();
+
+        // Ping some http host to try to wake up the network stack, which will allow the preceding
+        // Firebase DB write to flush (that otherwise might be more likely to queue on device).
+        if (NetworkCheck.isNetworkAvailable(context)) {
+            NetworkCheck.pingInternet();
+            Log.i(TAG, "pinged internet");
         }
     }
 

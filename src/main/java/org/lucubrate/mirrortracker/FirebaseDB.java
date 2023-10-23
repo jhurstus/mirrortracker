@@ -18,7 +18,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,8 +27,8 @@ import java.util.Locale;
 class FirebaseDB  {
     final private static String TAG = "FirebaseDB";
 
-    private DatabaseReference showPrivateInfo;
-    private DatabaseReference user;
+    private final DatabaseReference showPrivateInfo;
+    private final DatabaseReference user;
     private static boolean hasSetPersistence = false;
 
     private LocationService mService;
@@ -108,53 +107,49 @@ class FirebaseDB  {
         Log.d(TAG, "updating location");
 
         Geocoder geocoder = new Geocoder(context, Locale.getDefault());
-        List<Address> addresses;
         try {
-            addresses = geocoder.getFromLocation(
+            geocoder.getFromLocation(
                     location.getLatitude(),
                     location.getLongitude(),
-                    1 /* only need one address, since just getting city/state/country */);
-        } catch (IOException ioException) {
-            Log.e(TAG, "I/O issue with reverse geocoding", ioException);
-            return;
+                    1 /* only need one address, since just getting city/state/country */,
+                    addresses -> {
+                        if (addresses.size() == 0) {
+                            Log.e(TAG, "no address found");
+                            return;
+                        }
+
+                        Log.d(TAG, "syncing geocoded location to db");
+                        Address address = addresses.get(0);
+                        LocationEvent ev = new LocationEvent(
+                                location.getTime(), address.getLocality(), address.getAdminArea(),
+                                address.getCountryName(), location.getLatitude(),
+                                location.getLongitude(), "");
+
+                        DatabaseReference.goOnline();
+                        user.child("location").setValue(ev);
+                        Log.i(TAG, "updated location in firebase");
+
+                        // If LocationService is running, notify it of updated location so it can update its state
+                        // and/or bound Activity.  We can't just start the service here due to Android O+ background
+                        // service limitations.
+                        if (LocationService.started) {
+                            Intent i = new Intent(context.getApplicationContext(), LocationService.class);
+                            Bundle bundle = new Bundle();
+                            bundle.putParcelable(LocationService.RESULT_DATA_KEY, address);
+                            bundle.putParcelable(LocationService.LOCATION_DATA_EXTRA, location);
+                            i.putExtras(bundle);
+
+                            context.startService(i);
+                        }
+
+                        DebugLog.getInstance(context.getFilesDir()).logDbWrite();
+                    });
         } catch (IllegalArgumentException illegalArgumentException) {
             Log.e(TAG, "invalid lat/long. " +
                     "Latitude = " + location.getLatitude() +
                     ", Longitude = " +
                     location.getLongitude(), illegalArgumentException);
-            return;
         }
-
-        if (addresses == null || addresses.size() == 0) {
-            Log.e(TAG, "no address found");
-            return;
-        }
-
-        Log.d(TAG, "syncing geocoded location to db");
-        Address address = addresses.get(0);
-        LocationEvent ev = new LocationEvent(
-                location.getTime(), address.getLocality(), address.getAdminArea(),
-                address.getCountryName(), location.getLatitude(),
-                location.getLongitude(), "");
-
-        DatabaseReference.goOnline();
-        user.child("location").setValue(ev);
-        Log.i(TAG, "updated location in firebase");
-
-        // If LocationService is running, notify it of updated location so it can update its state
-        // and/or bound Activity.  We can't just start the service here due to Android O+ background
-        // service limitations.
-        if (LocationService.started) {
-            Intent i = new Intent(context.getApplicationContext(), LocationService.class);
-            Bundle bundle = new Bundle();
-            bundle.putParcelable(LocationService.RESULT_DATA_KEY, address);
-            bundle.putParcelable(LocationService.LOCATION_DATA_EXTRA, location);
-            i.putExtras(bundle);
-
-            context.startService(i);
-        }
-
-        DebugLog.getInstance(context.getFilesDir()).logDbWrite();
     }
 
     /** Updates whether to show private info on mirror. */

@@ -41,7 +41,7 @@ public class FusedLocationReceiver extends BroadcastReceiver {
         }
         Log.d(TAG, "received fused location intent");
 
-        if (!NetworkCheck.isNetworkAvailable(context)) {
+        if (NetworkCheck.isNetworkUnavailable(context)) {
             Log.d(TAG, "ignoring location evt because we can't ping it to the network now.");
             return;
         }

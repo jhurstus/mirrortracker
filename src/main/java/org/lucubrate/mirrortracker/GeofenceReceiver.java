@@ -37,7 +37,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
             return;
         }
 
-        if (!NetworkCheck.isNetworkAvailable(context)) {
+        if (NetworkCheck.isNetworkUnavailable(context)) {
             Log.d(TAG, "ignoring geofence evt because we can't ping it to the network now.");
             return;
         }

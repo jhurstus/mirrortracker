@@ -36,11 +36,11 @@ import static com.google.android.gms.location.Geofence.NEVER_EXPIRE;
 /**
  * Background service that initiates location tracking and provides data to a possibly bound
  * {@link SignedInActivity}.
- *
+ * <p>
  * Location is primarily tracked using GMS Geofence enter/exit events.  This is supplemented by a
  * generic location tracker, since it's possible for the Geofence events to fail in various
  * scenarios (not to mention any bugs in the Geofence implementation).
- *
+ * <p>
  * This service was originally designed to run continuously in the background and handle all db and
  * model reads/writes.  Since Android O though, that's no longer possible, so location tracking is
  * delegated to {@link FusedLocationReceiver} and {@link GeofenceReceiver}.  Data flow is:
@@ -139,7 +139,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
      * its implementation of onBind, which we also have to override to permit binding with
      * {@link SignedInActivity}.  All we need for boot is to briefly start this service in order
      * to register Geofences and FusedLocationProvider, so that's fine though.
-     *
+     * <p>
      * The onBind conflict could very well break functionality at some point in the future though.
      * If that happens, location service registration will need to be separated into a different
      * service than activity binding.

@@ -7,7 +7,7 @@ import android.util.Log;
 
 /**
  * Start location background service on device boot.
- *
+ * <p>
  * This is critical in order for background location updates and geofencing to be enabled whenever
  * device is on (as opposed to only after user opens app).
  */

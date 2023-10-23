@@ -36,7 +36,7 @@ public class FusedLocationReceiver extends BroadcastReceiver {
             if (LocationAvailability.hasLocationAvailability(intent)) {
                 return;
             }
-            Log.e(TAG, "no location result " + intent.toString());
+            Log.e(TAG, "no location result " + intent);
             return;
         }
         Log.d(TAG, "received fused location intent");

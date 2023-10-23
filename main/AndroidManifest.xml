@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.lucubrate.mirrortracker">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -15,6 +15,7 @@
         android:theme="@style/AppTheme">
 
         <activity
+            android:exported="true"
             android:name=".MainActivity"
             android:theme="@style/SplashTheme">
             <intent-filter>
@@ -40,12 +41,16 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".GeofenceReceiver">
+        <receiver
+            android:exported="false"
+            android:name=".GeofenceReceiver">
             <intent-filter>
                 <action android:name="org.lucubrate.mirrortracker.GEOFENCE_LOCATION" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".FusedLocationReceiver">
+        <receiver
+            android:exported="false"
+            android:name=".FusedLocationReceiver">
             <intent-filter>
                 <action android:name="org.lucubrate.mirrortracker.FUSED_LOCATION" />
             </intent-filter>

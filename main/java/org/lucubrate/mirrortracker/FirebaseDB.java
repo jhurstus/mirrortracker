@@ -6,8 +6,8 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -155,13 +155,6 @@ class FirebaseDB  {
         }
 
         DebugLog.getInstance(context.getFilesDir()).logDbWrite();
-
-        // Ping some http host to try to wake up the network stack, which will allow the preceding
-        // Firebase DB write to flush (that otherwise might be more likely to queue on device).
-        if (NetworkCheck.isNetworkAvailable(context)) {
-            NetworkCheck.pingInternet();
-            Log.i(TAG, "pinged internet");
-        }
     }
 
     /** Updates whether to show private info on mirror. */

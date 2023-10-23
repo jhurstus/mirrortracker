@@ -12,8 +12,8 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Binder;
 import android.os.IBinder;
-import android.support.annotation.NonNull;
-import android.support.v4.app.JobIntentService;
+import androidx.annotation.NonNull;
+import androidx.core.app.JobIntentService;
 import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;

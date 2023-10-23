@@ -27,6 +27,7 @@ public class LocationEvent {
         this.label = label;
     }
 
+    /** @noinspection unused*/
     public LocationEvent() {
         // Default constructor required for calls to DataSnapshot.getValue(LocationEvent.class)
     }

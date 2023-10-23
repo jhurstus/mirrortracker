@@ -21,8 +21,7 @@ import com.google.android.gms.location.GeofencingClient;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.location.Priority;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -115,8 +114,8 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
         // Handle start commands from FirebaseDB, which notify of updated user locations.
         if (intent.hasExtra(RESULT_DATA_KEY) && intent.hasExtra(LOCATION_DATA_EXTRA)) {
-            Address address = intent.getParcelableExtra(RESULT_DATA_KEY);
-            Location location = intent.getParcelableExtra(LOCATION_DATA_EXTRA);
+            Address address = intent.getParcelableExtra(RESULT_DATA_KEY, Address.class);
+            Location location = intent.getParcelableExtra(LOCATION_DATA_EXTRA, Location.class);
             if (address != null && location != null) {
                 mLastLocation = new LocationEvent(
                         location.getTime(), address.getLocality(), address.getAdminArea(),
@@ -172,23 +171,23 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
     }
 
     /** Whether the service is in a state in which it can mutate GMS geofence state. */
-    private boolean canUpdateGeofences() {
+    private boolean cantUpdateGeofences() {
         if (mGeofences == null || mGeofences.isEmpty()) {
-            return false;
+            return true;
         }
 
         if (getPackageManager().checkPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION, getPackageName()) !=
                 PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "ACCESS_FINE_LOCATION permission denied");
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /** Starts tracking geofences. */
     private void addGeofences() {
-        if (!canUpdateGeofences()) {
+        if (cantUpdateGeofences()) {
             return;
         }
         Log.d(TAG, "adding geofences " + mGeofences.size());
@@ -209,18 +208,8 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
         try {
             getGeofencingClient().addGeofences(fenceReq, getGeofencePendingIntent())
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            Log.d(TAG, "successfully added geofences");
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.d(TAG, "geofence add failed " + e.toString());
-                        }
-                    });
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "successfully added geofences"))
+                    .addOnFailureListener(e -> Log.d(TAG, "geofence add failed " + e));
         } catch (SecurityException e) {
             // Should never happen.  Permission checked in canUpdateGeofences.
             Log.d(TAG, "geofence security exception");
@@ -229,7 +218,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
     /** Stop tracking geofences. */
     private void removeGeofences() {
-        if (!canUpdateGeofences()) {
+        if (cantUpdateGeofences()) {
             return;
         }
         List<String> labels = new ArrayList<>(mGeofences.size());
@@ -278,11 +267,11 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
         addGeofences();
 
-        LocationRequest req = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setFastestInterval(5 * 60 * 1000)  // receive updates no faster than 5 minutely
-                .setInterval(20 * 60 * 1000)  // try to update at least every 20 minutes
-                .setSmallestDisplacement(15);  // no updates for deltas < 15 meters.
+        LocationRequest req =
+                new LocationRequest.Builder(20 * 60 * 1000)  // try to update at least every 20 minutes
+                .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY )
+                .setMinUpdateDistanceMeters(15)  // no updates for deltas < 15 meters.
+                .build();
 
         FusedLocationProviderClient client =
                 LocationServices.getFusedLocationProviderClient(getApplicationContext());

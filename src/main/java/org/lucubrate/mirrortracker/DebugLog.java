@@ -7,12 +7,13 @@ import com.google.android.gms.location.GeofencingEvent;
 import com.google.android.gms.location.LocationResult;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -31,9 +32,9 @@ final class DebugLog {
     final private static int MAX_LOG_LINES = 1000;
     private static DebugLog mDebugLog;
 
-    private File mLogFile;
+    private final File mLogFile;
 
-    private List<String> mLogLines;
+    private final List<String> mLogLines;
     private DebugLogWriteObserver observer;
 
     /**
@@ -54,19 +55,20 @@ final class DebugLog {
         mLogFile = new File(fileDir, FILE_NAME);
         if (!mLogFile.exists()) {
             try {
+                //noinspection ResultOfMethodCallIgnored
                 mLogFile.createNewFile();
-            } catch (IOException e) {}
+            } catch (IOException ignored) {}
         }
         if (mLogFile.canRead() && mLogFile.length() > 0) {
             try {
                 JsonReader reader = new JsonReader(
-                        new InputStreamReader(new FileInputStream(mLogFile)));
+                        new InputStreamReader(Files.newInputStream(mLogFile.toPath())));
                 reader.beginArray();
                 while (reader.hasNext()) {
                     mLogLines.add(reader.nextString());
                 }
                 reader.endArray();
-            } catch (IOException e) {}
+            } catch (IOException ignored) {}
         }
     }
 
@@ -98,7 +100,7 @@ final class DebugLog {
         }
 
         try {
-            JsonWriter writer = new JsonWriter(new OutputStreamWriter(stream, "UTF-8"));
+            JsonWriter writer = new JsonWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
             writer.setIndent("  ");
             writer.beginArray();
             for (String line : lines) {
@@ -106,7 +108,7 @@ final class DebugLog {
             }
             writer.endArray();
             writer.close();
-        } catch (IOException e) {}
+        } catch (IOException ignored) {}
 
         if (observer != null) {
             observer.onLogWritten(lines);
@@ -145,9 +147,13 @@ final class DebugLog {
         } else if (geofenceTransition == GEOFENCE_TRANSITION_DWELL) {
             log.append(" dwell");
         }
-        for (com.google.android.gms.location.Geofence g : e.getTriggeringGeofences()) {
-            log.append(' ');
-            log.append(g.getRequestId());
+        List<com.google.android.gms.location.Geofence> triggeringGeofences =
+                e.getTriggeringGeofences();
+        if (triggeringGeofences != null) {
+            for (com.google.android.gms.location.Geofence g : triggeringGeofences) {
+                log.append(' ');
+                log.append(g.getRequestId());
+            }
         }
 
         mLogLines.add(log.toString());
@@ -155,11 +161,14 @@ final class DebugLog {
     }
 
     void logLocationUpdated(LocationResult result) {
-        mLogLines.add(timestamp() +
-                String.format(Locale.getDefault(), "location %3.8f %3.8f",
-                result.getLastLocation().getLatitude(),
-                result.getLastLocation().getLongitude()));
-        write();
+        android.location.Location lastLocation = result.getLastLocation();
+        if (lastLocation != null) {
+            mLogLines.add(timestamp() +
+                    String.format(Locale.getDefault(), "location %3.8f %3.8f",
+                            result.getLastLocation().getLatitude(),
+                            result.getLastLocation().getLongitude()));
+            write();
+        }
     }
 
     void logDbWrite() {

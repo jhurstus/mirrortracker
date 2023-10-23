@@ -59,7 +59,7 @@
                     android:textColor="@color/bodyTextColor"
                     android:textSize="16sp" />
 
-                <Switch
+                <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/privateSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -97,7 +97,7 @@
                         android:textColor="@color/bodyTextColor"
                         android:textSize="16sp" />
 
-                    <Switch
+                    <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/locationSwitch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

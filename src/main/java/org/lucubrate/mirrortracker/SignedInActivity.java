@@ -9,7 +9,6 @@ import androidx.databinding.Bindable;
 import androidx.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.os.IBinder;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import android.text.method.ScrollingMovementMethod;
@@ -18,8 +17,6 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 
 import org.lucubrate.mirrortracker.databinding.ActivitySignedInBinding;
@@ -140,11 +137,9 @@ public class SignedInActivity extends AppCompatActivity
         }
         AuthUI.getInstance()
                 .signOut(this)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    public void onComplete(@NonNull Task<Void> task) {
-                        startActivity(SignedOutActivity.createIntent(SignedInActivity.this));
-                        finish();
-                    }
+                .addOnCompleteListener(task -> {
+                    startActivity(SignedOutActivity.createIntent(SignedInActivity.this));
+                    finish();
                 });
     }
 
@@ -245,7 +240,7 @@ public class SignedInActivity extends AppCompatActivity
     }
 
     // Bound connection to LocationService.
-    private ServiceConnection mConnection = new ServiceConnection() {
+    private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className,
                                        IBinder service) {

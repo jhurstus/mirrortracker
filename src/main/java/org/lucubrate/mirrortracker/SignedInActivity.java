@@ -4,6 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.databinding.BaseObservable;
 import androidx.databinding.Bindable;
 import androidx.databinding.DataBindingUtil;
@@ -113,7 +115,7 @@ public class SignedInActivity extends AppCompatActivity
 
     @Override
     public void onShowPrivateInfoChecked(View view) {
-        boolean checked = ((Switch) view).isChecked();
+        boolean checked = ((SwitchCompat) view).isChecked();
         mModel.setShowPrivateInfo(checked);
         if (mBound) {
             mService.updateShowPrivateInfo(checked);
@@ -122,7 +124,7 @@ public class SignedInActivity extends AppCompatActivity
 
     @Override
     public void onShareLocationChecked(View view) {
-        boolean checked = ((Switch) view).isChecked();
+        boolean checked = ((SwitchCompat) view).isChecked();
         mModel.setShareLocation(checked);
         if (mBound) {
             mService.updateShareLocation(checked);

@@ -244,7 +244,8 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
         intent.setClass(this, GeofenceReceiver.class);
         intent.setAction(GeofenceReceiver.GEOFENCE_INTENT_ACTION);
         mGeofencePendingIntent = PendingIntent.getBroadcast(
-                getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                getApplicationContext(), 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         return mGeofencePendingIntent;
     }
 
@@ -294,7 +295,8 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
         intent.setClass(this, FusedLocationReceiver.class);
         intent.setAction(FusedLocationReceiver.LOCATION_INTENT_ACTION);
         mFusedLocationPendingIntent = PendingIntent.getBroadcast(
-                getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                getApplicationContext(), 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         return mFusedLocationPendingIntent;
     }
 

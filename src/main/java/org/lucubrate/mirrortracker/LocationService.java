@@ -100,7 +100,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
             return;
         }
 
-        mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.toString(), MODE_PRIVATE);
+        mPrefs = getSharedPreferences(Preferences.PREFERENCE_FILE_NAME.val, MODE_PRIVATE);
         mDB = FirebaseDB.getInstance(u.getUid(), this);
         mDB.setLocationService(this);
 
@@ -302,7 +302,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
         return FirebaseAuth.getInstance().getCurrentUser() != null &&
                 Geocoder.isPresent() &&
                 mPrefs != null &&
-                mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
+                mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.val, true);
     }
 
     // Binder to SignedInActivity.
@@ -338,14 +338,14 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
     @SuppressLint("ApplySharedPref")
     void updateShareLocation(boolean share) {
         mPrefs.edit()
-                .putBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), share)
+                .putBoolean(Preferences.SHARE_LOCATION_PREF_KEY.val, share)
                 .commit();
         mDB.updateShareLocation(share);
         updateLocationTracking();
     }
 
     boolean shareLocation() {
-        return mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.toString(), true);
+        return mPrefs.getBoolean(Preferences.SHARE_LOCATION_PREF_KEY.val, true);
     }
 
     List<String> debugLogLines() {

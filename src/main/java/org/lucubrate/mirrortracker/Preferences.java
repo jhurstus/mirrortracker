@@ -6,14 +6,9 @@ enum Preferences {
     SHARE_LOCATION_PREF_KEY("share")
     ;
 
-    private final String val;
+    final String val;
 
     Preferences(final String val) {
         this.val = val;
-    }
-
-    @Override
-    public String toString() {
-        return val;
     }
 }

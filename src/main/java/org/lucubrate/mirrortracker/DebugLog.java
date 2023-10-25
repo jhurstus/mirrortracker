@@ -16,9 +16,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_DWELL;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
@@ -29,12 +31,12 @@ import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_EXIT;
  */
 final class DebugLog {
     final private static String FILE_NAME = "debug_log.json";
-    final private static int MAX_LOG_LINES = 1000;
+    final private static int MAX_LOG_LINES = 100;
     private static DebugLog mDebugLog;
 
     private final File mLogFile;
 
-    private final List<String> mLogLines;
+    private final Deque<String> mLogLines;
     private DebugLogWriteObserver observer;
 
     /**
@@ -50,7 +52,7 @@ final class DebugLog {
 
 
     private DebugLog(File fileDir) {
-        mLogLines = new ArrayList<>();
+        mLogLines = new LinkedBlockingDeque<>(MAX_LOG_LINES);
 
         mLogFile = new File(fileDir, FILE_NAME);
         if (!mLogFile.exists()) {
@@ -80,7 +82,7 @@ final class DebugLog {
     }
 
     List<String> getLogLines() {
-        return mLogLines;
+        return new ArrayList<>(mLogLines);
     }
 
     private void write() {
@@ -94,16 +96,11 @@ final class DebugLog {
             return;
         }
 
-        List<String> lines = mLogLines;
-        if (lines.size() > MAX_LOG_LINES) {
-            lines = lines.subList(lines.size() - MAX_LOG_LINES, lines.size());
-        }
-
         try {
             JsonWriter writer = new JsonWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
             writer.setIndent("  ");
             writer.beginArray();
-            for (String line : lines) {
+            for (String line : mLogLines) {
                 writer.value(line);
             }
             writer.endArray();
@@ -111,7 +108,7 @@ final class DebugLog {
         } catch (IOException ignored) {}
 
         if (observer != null) {
-            observer.onLogWritten(lines);
+            observer.onLogWritten(getLogLines());
         }
     }
 

@@ -6,5 +6,6 @@ import java.util.List;
 interface FirebaseDbObserver {
     void onLocationUpdated(LocationEvent e);
     void onShowPrivateInfoUpdated(boolean show);
+    void onMemoUpdated(String memo);
     void onGeofencesUpdated(List<Geofence> geofences);
 }

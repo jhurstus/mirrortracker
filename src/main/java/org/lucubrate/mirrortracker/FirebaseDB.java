@@ -28,6 +28,8 @@ class FirebaseDB  {
     final private static String TAG = "FirebaseDB";
 
     private final DatabaseReference showPrivateInfo;
+    private final DatabaseReference memo;
+    private boolean memoReadOnce;
     private final DatabaseReference user;
     private static boolean hasSetPersistence = false;
 
@@ -72,6 +74,32 @@ class FirebaseDB  {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.w(TAG, "Failed to read value.", databaseError.toException());
+            }
+        });
+
+        memoReadOnce = false;
+        memo = db.getReference("mirror/memo");
+        memo.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (memoReadOnce) {
+                    return;
+                }
+                if (mService != null) {
+                    String memoValue  = snapshot.getValue(String.class);
+                    if (memoValue != null) {
+                        // Only grab value from database once (for initial display) to avoid
+                        // clobbering text typed in by user during the spans between db write and
+                        // change/read.
+                        memoReadOnce = true;
+                    }
+                    mService.onMemoUpdated(memoValue == null ? "" : memoValue);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.w(TAG, "Failed to read value.", error.toException());
             }
         });
 
@@ -156,6 +184,8 @@ class FirebaseDB  {
     void updateShowPrivateInfo(boolean show) {
         showPrivateInfo.setValue(show);
     }
+
+    void updateMemo(String memoText) { memo.setValue(memoText); }
 
     /** Updates whether to share location of current user. */
     void updateShareLocation(boolean share) {

@@ -1,5 +1,6 @@
 package org.lucubrate.mirrortracker;
 
+import android.text.Editable;
 import android.view.View;
 
 /**
@@ -7,6 +8,7 @@ import android.view.View;
  */
 public interface SignedInHandler {
     void onShowPrivateInfoChecked(View view);
+    void onMemoEdited(Editable s);
     void onShareLocationChecked(View view);
     void onSignOutClicked(View view);
 }

@@ -13,9 +13,10 @@ import android.os.Bundle;
 import android.os.IBinder;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import android.text.Editable;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
@@ -68,7 +69,7 @@ public class SignedInActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         mModel = new Model(
-                getString(R.string.loading), true, true, "");
+                getString(R.string.loading), true, true, "", "");
         syncModelToService();
 
         ActivitySignedInBinding binding = DataBindingUtil.setContentView(
@@ -108,6 +109,20 @@ public class SignedInActivity extends AppCompatActivity
     @Override
     public void onShowPrivateInfoUpdated(boolean show) {
         mModel.setShowPrivateInfo(show);
+    }
+
+    @Override
+    public void onMemoUpdated(String memo) {
+        mModel.setMemo(memo);
+    }
+
+    @Override
+    public void onMemoEdited(Editable s) {
+        String memo = s.toString();
+        mModel.setMemo(memo);
+        if (mBound) {
+            mService.updateMemo(memo);
+        }
     }
 
     @Override
@@ -170,13 +185,15 @@ public class SignedInActivity extends AppCompatActivity
         private boolean showPrivateInfo;
         private boolean shareLocation;
         private String lastKnownLocation;
+        private String memo;
         private String debugLog;
 
         Model(String lastKnownLocation, boolean showPrivateInfo, boolean shareLocation,
-              String debugLog) {
+              String memo, String debugLog) {
             this.lastKnownLocation = lastKnownLocation;
             this.showPrivateInfo = showPrivateInfo;
             this.shareLocation = shareLocation;
+            this.memo = memo;
             this.debugLog = debugLog;
         }
 
@@ -220,6 +237,19 @@ public class SignedInActivity extends AppCompatActivity
         }
 
         /**
+         * @return Debug memo text, if any.
+         */
+        @Bindable
+        public String getMemo() {
+            return memo;
+        }
+
+        void setMemo(String memo) {
+            this.memo = memo;
+            notifyPropertyChanged(BR.memo);
+        }
+
+        /**
          * @return Debug log text, if any.
          */
         @Bindable
@@ -236,6 +266,7 @@ public class SignedInActivity extends AppCompatActivity
     private void syncModelToService() {
         if (mBound  && mModel != null) {
             mModel.setShowPrivateInfo(mService.showPrivateInfo());
+            mModel.setMemo(mService.memo());
             mModel.setShareLocation(mService.shareLocation());
             onLocationUpdated(mService.getLastLocation());
         }

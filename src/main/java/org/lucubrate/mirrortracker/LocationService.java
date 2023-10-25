@@ -73,6 +73,8 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
     private boolean mShowPrivateInfo;
 
+    private String mMemo;
+
     /** Whether this service is active. */
     static boolean started = false;
 
@@ -334,6 +336,23 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
 
     boolean showPrivateInfo() {
         return mShowPrivateInfo;
+    }
+
+    void updateMemo(String memo) {
+        mMemo = memo;
+        mDB.updateMemo(memo);
+    }
+
+    @Override
+    public void onMemoUpdated(String memo) {
+        mMemo = memo;
+        if (mActivity != null) {
+            mActivity.onMemoUpdated(memo);
+        }
+    }
+
+    String memo() {
+        return mMemo;
     }
 
     // Only running on my fast phone, so synchronous IO is fine.

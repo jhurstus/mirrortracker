@@ -115,7 +115,7 @@ public class LocationService extends JobIntentService implements FirebaseDbObser
         Log.d(TAG, "onStartCommand");
 
         // Handle start commands from FirebaseDB, which notify of updated user locations.
-        if (intent.hasExtra(RESULT_DATA_KEY) && intent.hasExtra(LOCATION_DATA_EXTRA)) {
+        if (intent != null && intent.hasExtra(RESULT_DATA_KEY) && intent.hasExtra(LOCATION_DATA_EXTRA)) {
             Address address = intent.getParcelableExtra(RESULT_DATA_KEY, Address.class);
             Location location = intent.getParcelableExtra(LOCATION_DATA_EXTRA, Location.class);
             if (address != null && location != null) {

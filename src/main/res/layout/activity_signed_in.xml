@@ -158,17 +158,21 @@
                 android:layout_marginTop="@dimen/activity_vertical_margin"
                 android:background="@color/separator" />
 
-            <TextView
-                android:id="@+id/debugLog"
+            <ScrollView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/activity_vertical_margin"
-                android:paddingStart="@dimen/activity_horizontal_margin"
-                android:text="@{model.debugLog}"
-                android:textColor="@color/bodyTextColor"
-                android:scrollbars = "vertical"
-                android:textSize="12sp" />
-
+                android:scrollbars="none" >
+                <TextView
+                    android:id="@+id/debugLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:paddingStart="@dimen/activity_horizontal_margin"
+                    android:paddingEnd="16dp"
+                    android:text="@{model.debugLog}"
+                    android:textColor="@color/bodyTextColor"
+                    android:textSize="12sp" />
+            </ScrollView>
         </LinearLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>

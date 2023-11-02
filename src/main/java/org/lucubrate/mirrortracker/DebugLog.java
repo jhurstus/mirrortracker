@@ -16,11 +16,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Deque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.concurrent.LinkedBlockingDeque;
 
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_DWELL;
 import static com.google.android.gms.location.Geofence.GEOFENCE_TRANSITION_ENTER;
@@ -36,7 +35,10 @@ final class DebugLog {
 
     private final File mLogFile;
 
-    private final Deque<String> mLogLines;
+    // Circular buffer of log lines, capped at MAX_LOG_LINES size.
+    private final List<String> mLogLines;
+    // Index of the next slot to be written in circular mLogLines buffer.
+    private int mLogIndex;
     private DebugLogWriteObserver observer;
 
     /**
@@ -52,7 +54,8 @@ final class DebugLog {
 
 
     private DebugLog(File fileDir) {
-        mLogLines = new LinkedBlockingDeque<>(MAX_LOG_LINES);
+        mLogLines = Collections.synchronizedList(new ArrayList<>());
+        mLogIndex = 0;
 
         mLogFile = new File(fileDir, FILE_NAME);
         if (!mLogFile.exists()) {
@@ -71,6 +74,10 @@ final class DebugLog {
                 }
                 reader.endArray();
             } catch (IOException ignored) {}
+            while (mLogLines.size() > MAX_LOG_LINES) {
+                mLogLines.remove(0);
+            }
+            mLogIndex = mLogLines.size() % MAX_LOG_LINES;
         }
     }
 
@@ -81,8 +88,16 @@ final class DebugLog {
         this.observer = observer;
     }
 
-    List<String> getLogLines() {
-        return new ArrayList<>(mLogLines);
+    synchronized List<String> getLogLines() {
+        if (mLogLines.size() < MAX_LOG_LINES) {
+            return new ArrayList<>(mLogLines);
+        }
+        List<String> ret = new ArrayList<>(mLogLines.size());
+        ret.addAll(mLogLines.subList(mLogIndex, mLogLines.size()));
+        if (mLogIndex != 0) {
+            ret.addAll(mLogLines.subList(0, mLogIndex));
+        }
+        return ret;
     }
 
     private void write() {
@@ -100,8 +115,17 @@ final class DebugLog {
             JsonWriter writer = new JsonWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
             writer.setIndent("  ");
             writer.beginArray();
-            for (String line : mLogLines) {
-                writer.value(line);
+            if (mLogLines.size() < MAX_LOG_LINES) {
+                for (String line : mLogLines) {
+                    writer.value(line);
+                }
+            } else {
+                for (int i = mLogIndex; i < mLogLines.size(); i++) {
+                    writer.value(mLogLines.get(i));
+                }
+                for (int i = 0; i < mLogIndex; i++) {
+                    writer.value(mLogLines.get(i));
+                }
             }
             writer.endArray();
             writer.close();
@@ -123,14 +147,22 @@ final class DebugLog {
                 c.get(Calendar.SECOND));
     }
 
-    void logServiceStarted() {
-        mLogLines.add(timestamp() + "service started");
+    private synchronized void addLogLine(String line) {
+        if (mLogLines.size() < MAX_LOG_LINES) {
+            mLogLines.add(line);
+        } else {
+            mLogLines.set(mLogIndex, line);
+        }
+        mLogIndex = (mLogIndex + 1) % MAX_LOG_LINES;
         write();
     }
 
+    void logServiceStarted() {
+        addLogLine(timestamp() + "service started");
+    }
+
     void logServiceStopped() {
-        mLogLines.add(timestamp() + "service stopped");
-        write();
+        addLogLine(timestamp() + "service stopped");
     }
 
     void logGeofencingEvent(GeofencingEvent e) {
@@ -153,23 +185,20 @@ final class DebugLog {
             }
         }
 
-        mLogLines.add(log.toString());
-        write();
+        addLogLine(log.toString());
     }
 
     void logLocationUpdated(LocationResult result) {
         android.location.Location lastLocation = result.getLastLocation();
         if (lastLocation != null) {
-            mLogLines.add(timestamp() +
+            addLogLine(timestamp() +
                     String.format(Locale.getDefault(), "location %3.8f %3.8f",
                             result.getLastLocation().getLatitude(),
                             result.getLastLocation().getLongitude()));
-            write();
         }
     }
 
     void logDbWrite() {
-        mLogLines.add(timestamp() + "updated location in firebase");
-        write();
+        addLogLine(timestamp() + "updated location in firebase");
     }
 }
